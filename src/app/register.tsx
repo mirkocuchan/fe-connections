@@ -23,6 +23,7 @@ export default function RegisterScreen() {
         console.log("error:", error);
     });
     }
+    
   return (
     <ThemedView style={styles.container}>
       <TextInput

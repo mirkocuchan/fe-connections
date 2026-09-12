@@ -1,26 +1,43 @@
 import { ThemedView } from "@/components/themed-view";
 import { API_BASE_URL } from "@/constants/api";
-import { useState } from "react";
+import * as SecureStore from "expo-secure-store";
+import { useEffect, useState } from "react";
 import { Button, StyleSheet, TextInput } from "react-native";
 
-export default function RegisterScreen() {
+export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   
-  function handleLogin() {
-    fetch(API_BASE_URL + "/login", {
+  useEffect(() => {
+  async function checkToken() {
+    const token = await SecureStore.getItemAsync("token");
+    console.log("token guardado:", token);
+  }
+  checkToken();
+  }, []);
+
+  async function handleLogin() {
+    try{
+      const response = await fetch(API_BASE_URL + "/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password, email }),
-    })
-    .then((response) => response.json())
-    .then((data) => {
-        console.log(data.token, data.refresh_token);
-    })
-    .catch((error) => {
-        console.log("error:", error);
-    });
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await response.json();
+      //que viene de data? funciono el login? incorrect info? 
+      if (!data.token) {
+        console.log("login fallido:", data.error);
+        return;
+      }
+      await SecureStore.setItemAsync("token", data.token);
+      await SecureStore.setItemAsync("refresh_token", data.refresh_token);
+
+      console.log("tokens guardados");
+    }catch (error){
+      console.log("error en login:", error);
     }
+  }
+
   return (
     <ThemedView style={styles.container}>
       <TextInput

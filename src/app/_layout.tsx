@@ -16,6 +16,7 @@ export default function RootLayout() {
   useEffect(() => {
     async function checkToken() {
       const storedToken = await SecureStore.getItemAsync("token");
+      console.log("layout - token leído:", storedToken);
       setToken(storedToken);
       setIsLoading(false);
     }

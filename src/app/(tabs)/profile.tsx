@@ -6,10 +6,12 @@ import { ThemedView } from '@/components/themed-view';
 import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { Button } from 'react-native';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { API_BASE_URL } from '@/constants/api';
 
 export default function ProfileScreen() {
+  const [profile, setProfile] = useState(null);
+  
   useEffect(() => { 
     async function fetchProfile() {
       const token = await SecureStore.getItemAsync("token");
@@ -19,7 +21,7 @@ export default function ProfileScreen() {
         },
       });
       const data = await response.json();
-      console.log(data);
+      setProfile(data);
     }
     fetchProfile();
   }, []);
@@ -34,7 +36,7 @@ export default function ProfileScreen() {
       <ThemedText type="title" style={styles.title}>
         Welcome to Profile
       </ThemedText>
-
+      {profile && <ThemedText>{profile.username}</ThemedText>}
       <Button title="Cerrar sesión" onPress={handleLogout} />
     </ThemedView>
   );

@@ -29,6 +29,9 @@ export default function ChatsScreen() {
         renderItem={({ item }) => (
           <ThemedText>{item.nickname}</ThemedText>
         )}
+        ListEmptyComponent={
+          <ThemedText>¡Iniciá alguna conversación para ver algo acá!</ThemedText>
+        }
       />
       <Link href="/register"><ThemedText>Ir a registro</ThemedText></Link>
       <Link href="/login"><ThemedText>Ir a login</ThemedText></Link>

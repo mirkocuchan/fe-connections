@@ -3,14 +3,14 @@ import { StyleSheet } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { API_BASE_URL } from '@/constants/api';
 import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
-import { Button } from 'react-native';
 import { useEffect, useState } from 'react';
-import { API_BASE_URL } from '@/constants/api';
+import { Button } from 'react-native';
 
 export default function ProfileScreen() {
-  const [profile, setProfile] = useState(null);
+  const [profile, setProfile] = useState<any>(null);
   
   useEffect(() => { 
     async function fetchProfile() {

@@ -1,14 +1,14 @@
-import { Link } from 'expo-router';
-import { StyleSheet, FlatList } from 'react-native';
-
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { useEffect, useState } from 'react';
-import * as SecureStore from 'expo-secure-store';
 import { API_BASE_URL } from '@/constants/api';
+import { Link } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
+import { useEffect, useState } from 'react';
+import { FlatList, StyleSheet } from 'react-native';
 
 export default function ChatsScreen() {
   const [chats, setChats] = useState<any[]>([]);
+
   useEffect(() => {
     async function fetchChats() {
       const token = await SecureStore.getItemAsync("token");

@@ -1,7 +1,7 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { API_BASE_URL } from '@/constants/api';
-import { useLocalSearchParams } from 'expo-router';
+import { Link, useLocalSearchParams } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { useEffect, useState } from 'react';
 import { Button, FlatList, StyleSheet, TextInput } from 'react-native';
@@ -70,6 +70,14 @@ export default function ChatScreen() {
   return (
     <ThemedView style={styles.container}>
       <ThemedText type="title">{chatName}</ThemedText>
+      <Link 
+        href={{
+          pathname: "/chats/[chatID]/card",
+          params: { chatID: chatID as string },
+        }}
+    >
+        <ThemedText>Ver ficha</ThemedText>
+      </Link>
       <TextInput
         value={nicknameInput}
         onChangeText={setNicknameInput}

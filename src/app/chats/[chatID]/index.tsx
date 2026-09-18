@@ -6,11 +6,13 @@ import * as SecureStore from 'expo-secure-store';
 import { useEffect, useState } from 'react';
 import { Button, FlatList, StyleSheet, TextInput } from 'react-native';
 
+
 export default function ChatScreen() {
   const { chatID } = useLocalSearchParams();
   const [messages, setMessages] = useState<any[]>([]);
   const [content, setContent] = useState("");
   const [chatName, setChatName] = useState("Chat");
+  const [nicknameInput, setNicknameInput] = useState("")
 
   async function fetchMessages() {
     const token = await SecureStore.getItemAsync("token");
@@ -46,6 +48,20 @@ export default function ChatScreen() {
       setChatName("anon-" + data.subject_id.slice(0, 8));
     }
   }
+  async function handleSetNickname() {
+    const token = await SecureStore.getItemAsync("token");
+    await fetch(API_BASE_URL + "/chats/" + chatID + "/card/nickname", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + token,
+      },
+      body: JSON.stringify({ nickname: nicknameInput }),
+    });
+    setNicknameInput("");
+    fetchCard();
+  }
+
   useEffect(() => {
     fetchMessages();
     fetchCard();
@@ -54,6 +70,13 @@ export default function ChatScreen() {
   return (
     <ThemedView style={styles.container}>
       <ThemedText type="title">{chatName}</ThemedText>
+      <TextInput
+        value={nicknameInput}
+        onChangeText={setNicknameInput}
+        placeholder="Ponerle un apodo..."
+        style={{ color: '#ffffff', borderWidth: 1, borderColor: '#555555', padding: 8 }}
+      />
+      <Button title="Guardar apodo" onPress={handleSetNickname} />
       <FlatList
         data={messages}
         keyExtractor={(item) => item.message_id}

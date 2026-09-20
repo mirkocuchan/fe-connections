@@ -1,46 +1,36 @@
-import { StyleSheet, TextInput } from 'react-native';
-
-
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { API_BASE_URL } from '@/constants/api';
+import { apiFetch } from '@/utils/api';
 import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { useEffect, useState } from 'react';
-import { Button } from 'react-native';
+import { Button, StyleSheet, TextInput } from 'react-native';
 
 export default function ProfileScreen() {
   const [profile, setProfile] = useState<any>(null);
   const [bio, setBio] = useState("");
   const [city, setCity] = useState("");
   const [country, setCountry] = useState("");
-  
+
   async function fetchProfile() {
-    const token = await SecureStore.getItemAsync("token");
-    const response = await fetch(API_BASE_URL + "/me", {
-      headers: { Authorization: "Bearer " + token },
-    });
-    const data = await response.json();
-    setProfile(data);
-    setBio(data.bio || "");
-    setCity(data.city || "");
-    setCountry(data.country || "");
+    const data = await apiFetch("/me");
+    if (data) {
+      setProfile(data);
+      setBio(data.bio || "");
+      setCity(data.city || "");
+      setCountry(data.country || "");
+    }
   }
 
   async function handleUpdateProfile() {
-    const token = await SecureStore.getItemAsync("token");
-    const response = await fetch(API_BASE_URL + "/me", {
+    const data = await apiFetch("/me", {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + token,
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ bio, city, country }),
     });
-    const data = await response.json();
-    setProfile(data);
+    if (data) setProfile(data);
   }
-  
+
   async function handleLogout() {
     await SecureStore.deleteItemAsync("token");
     await SecureStore.deleteItemAsync("refresh_token");
@@ -50,7 +40,7 @@ export default function ProfileScreen() {
   useEffect(() => {
     fetchProfile();
   }, []);
-    
+
   return (
     <ThemedView style={styles.container}>
       <ThemedText type="title" style={styles.title}>
@@ -76,7 +66,7 @@ export default function ProfileScreen() {
         style={{ color: '#ffffff', borderWidth: 1, borderColor: '#555555', padding: 8 }}
       />
       <Button title="Guardar perfil" onPress={handleUpdateProfile} />
-      
+
       <Button title="Cerrar sesión" onPress={handleLogout} />
     </ThemedView>
   );

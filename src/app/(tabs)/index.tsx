@@ -1,8 +1,6 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { API_BASE_URL } from '@/constants/api';
-import { Link } from 'expo-router';
-import * as SecureStore from 'expo-secure-store';
+import { apiFetch } from '@/utils/api';
 import { useEffect, useState } from 'react';
 import { FlatList, StyleSheet } from 'react-native';
 
@@ -11,16 +9,12 @@ export default function ChatsScreen() {
 
   useEffect(() => {
     async function fetchChats() {
-      const token = await SecureStore.getItemAsync("token");
-      const response = await fetch(API_BASE_URL + "/chats", {
-        headers: { Authorization: "Bearer " + token },
-      });
-      const data = await response.json();
-      setChats(data);
+      const data = await apiFetch("/chats");
+      if (data) setChats(data);
     }
     fetchChats();
   }, []);
-  
+
   return (
     <ThemedView style={styles.container}>
       <FlatList
@@ -33,9 +27,6 @@ export default function ChatsScreen() {
           <ThemedText>¡Iniciá alguna conversación para ver algo acá!</ThemedText>
         }
       />
-      <Link href="/register"><ThemedText>Ir a registro</ThemedText></Link>
-      <Link href="/login"><ThemedText>Ir a login</ThemedText></Link>
-
     </ThemedView>
   );
 }
@@ -45,8 +36,5 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  title: {
-    textAlign: 'center',
   },
 });

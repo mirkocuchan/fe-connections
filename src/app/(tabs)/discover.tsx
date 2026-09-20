@@ -1,39 +1,28 @@
-import { StyleSheet, FlatList } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { useEffect, useState } from 'react';
-import * as SecureStore from 'expo-secure-store';
-import { API_BASE_URL } from '@/constants/api';
-import { Pressable } from 'react-native';
+import { apiFetch } from '@/utils/api';
 import { router } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { FlatList, Pressable, StyleSheet } from 'react-native';
 
 export default function DiscoverScreen() {
   const [users, setUsers] = useState<any[]>([]);
 
   useEffect(() => {
     async function fetchDiscoverUsers() {
-      const token = await SecureStore.getItemAsync("token");
-      const response = await fetch(API_BASE_URL + "/users/discover", {
-        headers: { Authorization: "Bearer " + token },
-      });
-      const data = await response.json();
-      setUsers(data);
+      const data = await apiFetch("/users/discover");
+      if (data) setUsers(data);
     }
     fetchDiscoverUsers();
   }, []);
 
   async function handlePressUser(user: any) {
-    const token = await SecureStore.getItemAsync("token");
-    const response = await fetch(API_BASE_URL + "/chats", {
+    const data = await apiFetch("/chats", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + token,
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ other_user_id: user.user_id }),
     });
-    const data = await response.json();
-    router.push("/chats/" + data.chat_id);
+    if (data) router.push("/chats/" + data.chat_id);
   }
 
   return (
@@ -54,14 +43,10 @@ export default function DiscoverScreen() {
   );
 }
 
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  title: {
-    textAlign: 'center',
   },
 });

@@ -1,46 +1,38 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { API_BASE_URL } from '@/constants/api';
-import { Link, useLocalSearchParams } from 'expo-router';
-import * as SecureStore from 'expo-secure-store';
+import { apiFetch } from '@/utils/api';
+import { Link, router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Button, FlatList, StyleSheet, TextInput } from 'react-native';
-
 
 export default function ChatScreen() {
   const { chatID } = useLocalSearchParams();
   const [messages, setMessages] = useState<any[]>([]);
   const [content, setContent] = useState("");
   const [chatName, setChatName] = useState("Chat");
-  const [nicknameInput, setNicknameInput] = useState("")
+  const [nicknameInput, setNicknameInput] = useState("");
+  const [otherUserID, setOtherUserID] = useState("");
 
   async function fetchMessages() {
-    const token = await SecureStore.getItemAsync("token");
-    const response = await fetch(API_BASE_URL + "/chats/" + chatID + "/messages", {
-      headers: { Authorization: "Bearer " + token },
-    });
-    const data = await response.json();
-    setMessages(data);
+    const data = await apiFetch("/chats/" + chatID + "/messages");
+    if (data) setMessages(data);
   }
+
   async function handleSendMessage() {
-    const token = await SecureStore.getItemAsync("token");
-    await fetch(API_BASE_URL + "/chats/" + chatID + "/messages", {
-        method: "POST",
-        headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + token,
-        },
-        body: JSON.stringify({ content }),
+    await apiFetch("/chats/" + chatID + "/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content }),
     });
     setContent("");
     fetchMessages();
   }
+
   async function fetchCard() {
-    const token = await SecureStore.getItemAsync("token");
-    const response = await fetch(API_BASE_URL + "/chats/" + chatID + "/card", {
-      headers: { Authorization: "Bearer " + token },
-    });
-    const data = await response.json();
+    const data = await apiFetch("/chats/" + chatID + "/card");
+    if (!data) return;
+
+    setOtherUserID(data.subject_id);
 
     if (data.nickname && data.nickname.Valid) {
       setChatName(data.nickname.String);
@@ -48,18 +40,33 @@ export default function ChatScreen() {
       setChatName("anon-" + data.subject_id.slice(0, 8));
     }
   }
+
   async function handleSetNickname() {
-    const token = await SecureStore.getItemAsync("token");
-    await fetch(API_BASE_URL + "/chats/" + chatID + "/card/nickname", {
+    await apiFetch("/chats/" + chatID + "/card/nickname", {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + token,
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ nickname: nicknameInput }),
     });
     setNicknameInput("");
     fetchCard();
+  }
+
+  async function handleBlockUser() {
+    await apiFetch("/me/block/" + otherUserID, {
+      method: "POST",
+    });
+    router.replace("/(tabs)");
+  }
+
+  const [reportDetails, setReportDetails] = useState("");
+
+  async function handleReport(reason: string) {
+    await apiFetch("/me/report/" + otherUserID, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason, details: reportDetails }),
+    });
+    setReportDetails("");
   }
 
   useEffect(() => {
@@ -70,12 +77,12 @@ export default function ChatScreen() {
   return (
     <ThemedView style={styles.container}>
       <ThemedText type="title">{chatName}</ThemedText>
-      <Link 
+      <Link
         href={{
           pathname: "/chats/[chatID]/card",
           params: { chatID: chatID as string },
         }}
-    >
+      >
         <ThemedText>Ver ficha</ThemedText>
       </Link>
       <TextInput
@@ -102,6 +109,19 @@ export default function ChatScreen() {
         style={{ color: '#ffffff', borderWidth: 1, borderColor: '#555555', padding: 8 }}
       />
       <Button title="Enviar" onPress={handleSendMessage} />
+      <Button title="Bloquear usuario" onPress={handleBlockUser} />
+
+      <ThemedText type="subtitle">Reportar</ThemedText>
+      <TextInput
+        value={reportDetails}
+        onChangeText={setReportDetails}
+        placeholder="Detalles (obligatorio si elegís 'otro')"
+        style={{ color: '#ffffff', borderWidth: 1, borderColor: '#555555', padding: 8 }}
+      />
+      <Button title="Reportar: Spam" onPress={() => handleReport("spam")} />
+      <Button title="Reportar: Acoso" onPress={() => handleReport("acoso")} />
+      <Button title="Reportar: Contenido inapropiado" onPress={() => handleReport("contenido_inapropiado")} />
+      <Button title="Reportar: Otro" onPress={() => handleReport("otro")} />
     </ThemedView>
   );
 }

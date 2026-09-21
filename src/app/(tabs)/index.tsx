@@ -1,8 +1,9 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { apiFetch } from '@/utils/api';
+import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { FlatList, StyleSheet } from 'react-native';
+import { FlatList, Pressable, StyleSheet } from 'react-native';
 
 export default function ChatsScreen() {
   const [chats, setChats] = useState<any[]>([]);
@@ -21,7 +22,9 @@ export default function ChatsScreen() {
         data={chats}
         keyExtractor={(item) => item.chat_id}
         renderItem={({ item }) => (
-          <ThemedText>{item.nickname}</ThemedText>
+          <Pressable onPress={() => router.push("/chats/" + item.chat_id)}>
+            <ThemedText>{item.nickname}</ThemedText>
+          </Pressable>
         )}
         ListEmptyComponent={
           <ThemedText>¡Iniciá alguna conversación para ver algo acá!</ThemedText>

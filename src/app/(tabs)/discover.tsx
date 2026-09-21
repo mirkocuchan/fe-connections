@@ -22,7 +22,12 @@ export default function DiscoverScreen() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ other_user_id: user.user_id }),
     });
-    if (data) router.push("/chats/" + data.chat_id);
+    if (data) {
+      router.push({
+        pathname: "/chats/[chatID]",
+        params: { chatID: data.chat_id },
+      });
+    }
   }
 
   return (

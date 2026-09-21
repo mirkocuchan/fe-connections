@@ -4,13 +4,14 @@ import { apiFetch } from '@/utils/api';
 import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { useEffect, useState } from 'react';
-import { Button, StyleSheet, TextInput } from 'react-native';
+import { Button, FlatList, StyleSheet, TextInput } from 'react-native';
 
 export default function ProfileScreen() {
   const [profile, setProfile] = useState<any>(null);
   const [bio, setBio] = useState("");
   const [city, setCity] = useState("");
   const [country, setCountry] = useState("");
+  const [blockedUsers, setBlockedUsers] = useState<any[]>([]);
 
   async function fetchProfile() {
     const data = await apiFetch("/me");
@@ -36,9 +37,21 @@ export default function ProfileScreen() {
     await SecureStore.deleteItemAsync("refresh_token");
     router.replace("/login");
   }
+  async function fetchBlockedUsers() {
+    const data = await apiFetch("/me/blocked");
+    if (data) setBlockedUsers(data);
+  }
+
+  async function handleUnblock(userID: string) {
+    await apiFetch("/me/unblock/" + userID, {
+      method: "DELETE",
+    });
+    fetchBlockedUsers();
+  }
 
   useEffect(() => {
     fetchProfile();
+    fetchBlockedUsers();
   }, []);
 
   return (
@@ -65,6 +78,17 @@ export default function ProfileScreen() {
         placeholder="País"
         style={{ color: '#ffffff', borderWidth: 1, borderColor: '#555555', padding: 8 }}
       />
+      <ThemedText type="subtitle">Usuarios bloqueados</ThemedText>
+        <FlatList
+          data={blockedUsers}
+          keyExtractor={(item) => item.blocked_id}
+          renderItem={({ item }) => (
+            <ThemedView>
+              <ThemedText>{item.blocked_id}</ThemedText>
+              <Button title="Desbloquear" onPress={() => handleUnblock(item.blocked_id)} />
+            </ThemedView>
+          )}
+        />
       <Button title="Guardar perfil" onPress={handleUpdateProfile} />
 
       <Button title="Cerrar sesión" onPress={handleLogout} />

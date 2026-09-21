@@ -1,9 +1,9 @@
-import { ThemedView } from "@/components/themed-view";
 import { ThemedText } from "@/components/themed-text";
+import { ThemedView } from "@/components/themed-view";
 import { API_BASE_URL } from "@/constants/api";
-import { router } from 'expo-router';
+import { Link, router } from 'expo-router';
 import * as SecureStore from "expo-secure-store";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button, StyleSheet, TextInput } from "react-native";
 
 export default function LoginScreen() {
@@ -12,6 +12,7 @@ export default function LoginScreen() {
   const [errorMessage, setErrorMessage] = useState("");
 
   async function handleLogin() {
+    setErrorMessage("");
     try {
       const response = await fetch(API_BASE_URL + "/login", {
         method: "POST",
@@ -27,6 +28,7 @@ export default function LoginScreen() {
 
       await SecureStore.setItemAsync("token", data.token);
       await SecureStore.setItemAsync("refresh_token", data.refresh_token);
+      await SecureStore.setItemAsync("my_user_id", data.id);
       router.replace("/(tabs)");
     } catch (error) {
       setErrorMessage("No se pudo conectar con el servidor");
@@ -51,7 +53,9 @@ export default function LoginScreen() {
         style={{ color: '#ffffff', borderWidth: 1, borderColor: '#ccc', padding: 8 }}
       />
       <Button title="Log in" onPress={handleLogin} />
-
+      <Link href="/register">
+        <ThemedText>¿No tenés cuenta? Registrate</ThemedText>
+      </Link>
       {errorMessage ? (
         <ThemedText style={{ color: 'red' }}>{errorMessage}</ThemedText>
       ) : null}

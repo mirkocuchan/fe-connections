@@ -16,6 +16,9 @@ export default function CardScreen() {
     const data = await apiFetch("/chats/" + chatID + "/card");
     if (!data) return;
 
+    setCard(data);
+    setNotesInput(data.notes_on_subject?.Valid ? data.notes_on_subject.String : "");
+    
     const myUserID = await SecureStore.getItemAsync("my_user_id"); // ver nota abajo
     const isInitiator = myUserID === data.user_one_id;
 

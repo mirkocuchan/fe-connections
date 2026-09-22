@@ -68,7 +68,7 @@ export default function ChatScreen() {
     });
     setReportDetails("");
   }
-
+  
   useEffect(() => {
     fetchMessages();
     fetchCard();

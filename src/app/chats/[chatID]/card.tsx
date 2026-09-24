@@ -5,6 +5,7 @@ import { useLocalSearchParams } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { useEffect, useState } from 'react';
 import { Button, StyleSheet, TextInput } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function CardScreen() {
   const { chatID } = useLocalSearchParams();
@@ -19,7 +20,7 @@ export default function CardScreen() {
     setCard(data);
     setNotesInput(data.notes_on_subject?.Valid ? data.notes_on_subject.String : "");
     
-    const myUserID = await SecureStore.getItemAsync("my_user_id"); // ver nota abajo
+    const myUserID = await SecureStore.getItemAsync("my_user_id");
     const isInitiator = myUserID === data.user_one_id;
 
     if (data.nickname && data.nickname.Valid) {
@@ -56,55 +57,57 @@ export default function CardScreen() {
   }
 
   async function handleResetCard() {
-  await apiFetch("/chats/" + chatID + "/card/reset", {
-    method: "PATCH",
-  });
-  fetchCard();
-}
+    await apiFetch("/chats/" + chatID + "/card/reset", {
+      method: "PATCH",
+    });
+    fetchCard();
+  }
 
   useEffect(() => {
     fetchCard();
   }, []);
 
   return (
-    <ThemedView style={styles.container}>
-      {card && (
-        <>
-          <ThemedText type="title">
-            {card.nickname?.Valid ? card.nickname.String : "Sin apodo"}
-          </ThemedText>
+    <SafeAreaView style={{ flex: 1 }}>
+      <ThemedView style={styles.container}>
+        {card && (
+          <>
+            <ThemedText type="title">
+              {card.nickname?.Valid ? card.nickname.String : "Sin apodo"}
+            </ThemedText>
 
-          <ThemedText>Nombre: {card.display_name_value}</ThemedText>
-          <ThemedText>Fecha de nacimiento: {card.date_of_birth_value}</ThemedText>
-          <ThemedText>Ciudad: {card.city_value}</ThemedText>
-          <ThemedText>País: {card.country_value}</ThemedText>
-          <ThemedText>Bio: {card.bio_value}</ThemedText>
-          <ThemedText>Hobbies: {card.hobbies_value}</ThemedText>
-          <ThemedText>Idiomas: {card.languages_value}</ThemedText>
-          <ThemedText>
-            Notas: {card.notes_on_subject?.Valid ? card.notes_on_subject.String : "Sin notas"}
-          </ThemedText>
-          <TextInput
-            value={notesInput}
-            onChangeText={setNotesInput}
-            placeholder="Notas sobre esta persona..."
-            style={{ color: '#ffffff', borderWidth: 1, borderColor: '#555555', padding: 8 }}
-          />
-          <Button title="Guardar notas" onPress={handleSaveNotes} />
+            <ThemedText>Nombre: {card.display_name_value}</ThemedText>
+            <ThemedText>Fecha de nacimiento: {card.date_of_birth_value}</ThemedText>
+            <ThemedText>Ciudad: {card.city_value}</ThemedText>
+            <ThemedText>País: {card.country_value}</ThemedText>
+            <ThemedText>Bio: {card.bio_value}</ThemedText>
+            <ThemedText>Hobbies: {card.hobbies_value}</ThemedText>
+            <ThemedText>Idiomas: {card.languages_value}</ThemedText>
+            <ThemedText>
+              Notas: {card.notes_on_subject?.Valid ? card.notes_on_subject.String : "Sin notas"}
+            </ThemedText>
+            <TextInput
+              value={notesInput}
+              onChangeText={setNotesInput}
+              placeholder="Notas sobre esta persona..."
+              style={{ color: '#ffffff', borderWidth: 1, borderColor: '#555555', padding: 8 }}
+            />
+            <Button title="Guardar notas" onPress={handleSaveNotes} />
 
-          <ThemedText type="subtitle">Revelar mis datos</ThemedText>
-          <Button title="Revelar nombre" onPress={() => handleReveal("name")} />
-          <Button title="Revelar fecha de nacimiento" onPress={() => handleReveal("date_of_birth")} />
-          <Button title="Revelar ciudad" onPress={() => handleReveal("city")} />
-          <Button title="Revelar país" onPress={() => handleReveal("country")} />
-          <Button title="Revelar bio" onPress={() => handleReveal("bio")} />
-          <Button title="Revelar hobbies" onPress={() => handleReveal("hobbies")} />
-          <Button title="Revelar idiomas" onPress={() => handleReveal("languages")} />
-          <Button title="Revelar todo" onPress={handleRevealAll} />
-          <Button title="Resetear ficha" onPress={handleResetCard} />
-        </>
-      )}
-    </ThemedView>
+            <ThemedText type="subtitle">Revelar mis datos</ThemedText>
+            <Button title="Revelar nombre" onPress={() => handleReveal("name")} />
+            <Button title="Revelar fecha de nacimiento" onPress={() => handleReveal("date_of_birth")} />
+            <Button title="Revelar ciudad" onPress={() => handleReveal("city")} />
+            <Button title="Revelar país" onPress={() => handleReveal("country")} />
+            <Button title="Revelar bio" onPress={() => handleReveal("bio")} />
+            <Button title="Revelar hobbies" onPress={() => handleReveal("hobbies")} />
+            <Button title="Revelar idiomas" onPress={() => handleReveal("languages")} />
+            <Button title="Revelar todo" onPress={handleRevealAll} />
+            <Button title="Resetear ficha" onPress={handleResetCard} />
+          </>
+        )}
+      </ThemedView>
+    </SafeAreaView>
   );
 }
 

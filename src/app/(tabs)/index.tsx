@@ -4,6 +4,7 @@ import { apiFetch } from '@/utils/api';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Alert, FlatList, Image, Modal, Pressable, StyleSheet, TextInput } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function ChatsScreen() {
   const [chats, setChats] = useState<any[]>([]);
@@ -62,58 +63,60 @@ export default function ChatsScreen() {
   );
 
   return (
-    <ThemedView style={styles.container}>
-      <TextInput
-        value={searchQuery}
-        onChangeText={setSearchQuery}
-        placeholder="Buscar..."
-        style={{ color: '#ffffff', borderWidth: 1, borderColor: '#555555', padding: 8 }}
-      />
-      <FlatList
-        data={filteredChats}
-        keyExtractor={(item) => item.chat_id}
-        refreshing={refreshing}
-        onRefresh={handleRefresh}
-        renderItem={({ item }) => (
-          <Pressable
-            onPress={() => router.push({ pathname: "/chats/[chatID]", params: { chatID: item.chat_id } })}
-            onLongPress={() => showChatOptions(item)}
-          >
-            <ThemedView style={{ flexDirection: 'row', alignItems: 'center', padding: 8, gap: 8 }}>
-              <Pressable onPress={() => setZoomedPhoto(item.photo_url)}>
-                <Image
-                  source={item.photo_url ? { uri: item.photo_url } : require('@/assets/images/icon.png')}
-                  style={{ width: 50, height: 50, borderRadius: 25 }}
-                />
-              </Pressable>
-              <ThemedView>
-                <ThemedText>{item.nickname}</ThemedText>
-                <ThemedText>{item.last_message}</ThemedText>
+    <SafeAreaView style={{ flex: 1 }}>
+      <ThemedView style={styles.container}>
+        <TextInput
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          placeholder="Buscar..."
+          style={{ color: '#ffffff', borderWidth: 1, borderColor: '#555555', padding: 8 }}
+        />
+        <FlatList
+          data={filteredChats}
+          keyExtractor={(item) => item.chat_id}
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          renderItem={({ item }) => (
+            <Pressable
+              onPress={() => router.push({ pathname: "/chats/[chatID]", params: { chatID: item.chat_id } })}
+              onLongPress={() => showChatOptions(item)}
+            >
+              <ThemedView style={{ flexDirection: 'row', alignItems: 'center', padding: 8, gap: 8 }}>
+                <Pressable onPress={() => setZoomedPhoto(item.photo_url)}>
+                  <Image
+                    source={item.photo_url ? { uri: item.photo_url } : require('@/assets/images/icon.png')}
+                    style={{ width: 50, height: 50, borderRadius: 25 }}
+                  />
+                </Pressable>
+                <ThemedView>
+                  <ThemedText>{item.nickname}</ThemedText>
+                  <ThemedText>{item.last_message}</ThemedText>
+                </ThemedView>
               </ThemedView>
-            </ThemedView>
+            </Pressable>
+          )}
+          ListEmptyComponent={
+            <ThemedText>
+              {searchQuery
+                ? "No se encontraron chats con ese nombre."
+                : "¡Iniciá alguna conversación para ver algo acá!"}
+            </ThemedText>
+          }
+        />
+        <Modal visible={!!zoomedPhoto} transparent={true} onRequestClose={() => setZoomedPhoto(null)}>
+          <Pressable
+            style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.9)', justifyContent: 'center', alignItems: 'center' }}
+            onPress={() => setZoomedPhoto(null)}
+          >
+            <Image
+              source={{ uri: zoomedPhoto || undefined }}
+              style={{ width: '90%', height: '60%' }}
+              resizeMode="contain"
+            />
           </Pressable>
-        )}
-        ListEmptyComponent={
-          <ThemedText>
-            {searchQuery
-              ? "No se encontraron chats con ese nombre."
-              : "¡Iniciá alguna conversación para ver algo acá!"}
-          </ThemedText>
-        }
-      />
-      <Modal visible={!!zoomedPhoto} transparent={true} onRequestClose={() => setZoomedPhoto(null)}>
-        <Pressable
-          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.9)', justifyContent: 'center', alignItems: 'center' }}
-          onPress={() => setZoomedPhoto(null)}
-        >
-          <Image
-            source={{ uri: zoomedPhoto || undefined }}
-            style={{ width: '90%', height: '60%' }}
-            resizeMode="contain"
-          />
-        </Pressable>
-      </Modal>
-    </ThemedView>
+        </Modal>
+      </ThemedView>
+    </SafeAreaView>
   );
 }
 

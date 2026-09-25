@@ -5,6 +5,8 @@ import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { useEffect, useState } from 'react';
 import { Button, FlatList, StyleSheet, TextInput } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
 
 export default function ProfileScreen() {
   const [profile, setProfile] = useState<any>(null);
@@ -55,44 +57,46 @@ export default function ProfileScreen() {
   }, []);
 
   return (
-    <ThemedView style={styles.container}>
-      <ThemedText type="title" style={styles.title}>
-        Welcome to Profile
-      </ThemedText>
-      {profile && <ThemedText>{profile.username}</ThemedText>}
-      <TextInput
-        value={bio}
-        onChangeText={setBio}
-        placeholder="Bio"
-        style={{ color: '#ffffff', borderWidth: 1, borderColor: '#555555', padding: 8 }}
-      />
-      <TextInput
-        value={city}
-        onChangeText={setCity}
-        placeholder="Ciudad"
-        style={{ color: '#ffffff', borderWidth: 1, borderColor: '#555555', padding: 8 }}
-      />
-      <TextInput
-        value={country}
-        onChangeText={setCountry}
-        placeholder="País"
-        style={{ color: '#ffffff', borderWidth: 1, borderColor: '#555555', padding: 8 }}
-      />
-      <ThemedText type="subtitle">Usuarios bloqueados</ThemedText>
-        <FlatList
-          data={blockedUsers}
-          keyExtractor={(item) => item.blocked_id}
-          renderItem={({ item }) => (
-            <ThemedView>
-              <ThemedText>{item.blocked_id}</ThemedText>
-              <Button title="Desbloquear" onPress={() => handleUnblock(item.blocked_id)} />
-            </ThemedView>
-          )}
+      <SafeAreaView style={{ flex: 1 }}>
+      <ThemedView style={styles.container}>
+        <ThemedText type="title" style={styles.title}>
+          Welcome to Profile
+        </ThemedText>
+        {profile && <ThemedText>{profile.username}</ThemedText>}
+        <TextInput
+          value={bio}
+          onChangeText={setBio}
+          placeholder="Bio"
+          style={{ color: '#ffffff', borderWidth: 1, borderColor: '#555555', padding: 8 }}
         />
-      <Button title="Guardar perfil" onPress={handleUpdateProfile} />
+        <TextInput
+          value={city}
+          onChangeText={setCity}
+          placeholder="Ciudad"
+          style={{ color: '#ffffff', borderWidth: 1, borderColor: '#555555', padding: 8 }}
+        />
+        <TextInput
+          value={country}
+          onChangeText={setCountry}
+          placeholder="País"
+          style={{ color: '#ffffff', borderWidth: 1, borderColor: '#555555', padding: 8 }}
+        />
+        <ThemedText type="subtitle">Usuarios bloqueados</ThemedText>
+          <FlatList
+            data={blockedUsers}
+            keyExtractor={(item) => item.blocked_id}
+            renderItem={({ item }) => (
+              <ThemedView>
+                <ThemedText>{item.blocked_id}</ThemedText>
+                <Button title="Desbloquear" onPress={() => handleUnblock(item.blocked_id)} />
+              </ThemedView>
+            )}
+          />
+        <Button title="Guardar perfil" onPress={handleUpdateProfile} />
 
-      <Button title="Cerrar sesión" onPress={handleLogout} />
-    </ThemedView>
+        <Button title="Cerrar sesión" onPress={handleLogout} />
+      </ThemedView>
+    </SafeAreaView>
   );
 }
 

@@ -4,6 +4,7 @@ import { API_BASE_URL } from "@/constants/api";
 import { router } from 'expo-router';
 import { useState } from "react";
 import { Button, StyleSheet, TextInput } from "react-native";
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function RegisterScreen() {
   const [username, setUsername] = useState("");
@@ -32,40 +33,42 @@ export default function RegisterScreen() {
   }
 
   return (
-    <ThemedView style={styles.container}>
-      <TextInput
-        value={username}
-        onChangeText={setUsername}
-        placeholder="Usuario"
-        style={{ color: '#ffffff', borderWidth: 1, borderColor: '#ccc', padding: 8 }}
-      />
-      <TextInput
-        value={email}
-        onChangeText={setEmail}
-        placeholder="Email"
-        keyboardType="email-address"
-        autoCapitalize="none"
-        style={{ color: '#ffffff', borderWidth: 1, borderColor: '#ccc', padding: 8 }}
-      />
-      <TextInput
-        value={password}
-        onChangeText={setPassword}
-        placeholder="Contraseña"
-        secureTextEntry
-        style={{ color: '#ffffff', borderWidth: 1, borderColor: '#ccc', padding: 8 }}
-      />
-      <TextInput
-        value={dateOfBirth}
-        onChangeText={setDateOfBirth}
-        placeholder="Fecha de nacimiento (YYYY-MM-DD)"
-        style={{ color: '#ffffff', borderWidth: 1, borderColor: '#ccc', padding: 8 }}
-      />
-      <Button title="Register" onPress={handleRegister} />
+    <SafeAreaView style={{ flex: 1 }}>
+      <ThemedView style={styles.container}>
+        <TextInput
+          value={username}
+          onChangeText={setUsername}
+          placeholder="Usuario"
+          style={{ color: '#ffffff', borderWidth: 1, borderColor: '#ccc', padding: 8 }}
+        />
+        <TextInput
+          value={email}
+          onChangeText={setEmail}
+          placeholder="Email"
+          keyboardType="email-address"
+          autoCapitalize="none"
+          style={{ color: '#ffffff', borderWidth: 1, borderColor: '#ccc', padding: 8 }}
+        />
+        <TextInput
+          value={password}
+          onChangeText={setPassword}
+          placeholder="Contraseña"
+          secureTextEntry
+          style={{ color: '#ffffff', borderWidth: 1, borderColor: '#ccc', padding: 8 }}
+        />
+        <TextInput
+          value={dateOfBirth}
+          onChangeText={setDateOfBirth}
+          placeholder="Fecha de nacimiento (YYYY-MM-DD)"
+          style={{ color: '#ffffff', borderWidth: 1, borderColor: '#ccc', padding: 8 }}
+        />
+        <Button title="Register" onPress={handleRegister} />
 
-      {errorMessage ? (
-        <ThemedText style={{ color: 'red' }}>{errorMessage}</ThemedText>
-      ) : null}
-    </ThemedView>
+        {errorMessage ? (
+          <ThemedText style={{ color: 'red' }}>{errorMessage}</ThemedText>
+        ) : null}
+      </ThemedView>
+    </SafeAreaView>
   );
 }
 

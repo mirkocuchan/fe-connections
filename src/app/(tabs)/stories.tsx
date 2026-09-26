@@ -1,10 +1,15 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { API_BASE_URL } from '@/constants/api';
 import { apiFetch } from '@/utils/api';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
 import { useCallback, useEffect, useState } from 'react';
-import { Button, FlatList, Image, Modal, Pressable, StyleSheet, TextInput } from 'react-native';
+import { Button, FlatList, Image, Modal, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
 
 function groupStoriesByUser(stories: any[]) {
   const grouped: { [userID: string]: any[] } = {};
@@ -74,6 +79,51 @@ export default function StoriesScreen() {
     setNewMediaURL("");
     fetchStories();
   }
+  async function pickImage() {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      alert("Necesitamos permiso para acceder a tus fotos");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.7,
+    });
+
+    if (result.canceled) return;
+
+    const imageUri = result.assets[0].uri;
+    await uploadAndCreateStory(imageUri);
+  }
+
+  async function uploadAndCreateStory(imageUri: string) {
+    const token = await SecureStore.getItemAsync("token");
+
+    const uploadResult = await FileSystem.uploadAsync(
+      API_BASE_URL + "/upload",
+      imageUri,
+      {
+        httpMethod: "POST",
+        uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+        fieldName: "file",
+        headers: {
+          Authorization: "Bearer " + token,
+        },
+      }
+    );
+
+    const uploadData = JSON.parse(uploadResult.body);
+
+    await apiFetch("/me/stories", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ media_url: uploadData.url, media_type: "image" }),
+    });
+
+    fetchStories();
+  }
+
   useEffect(() => {
     if (!openGroup) return;
 
@@ -89,13 +139,7 @@ export default function StoriesScreen() {
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <ThemedView style={styles.container}>
-        <TextInput
-          value={newMediaURL}
-          onChangeText={setNewMediaURL}
-          placeholder="URL de tu historia..."
-          style={{ color: '#ffffff', borderWidth: 1, borderColor: '#555555', padding: 8 }}
-        />
-        <Button title="Publicar historia" onPress={handleCreateStory} />
+        <Button title="📷 Publicar historia" onPress={pickImage} />
 
         <FlatList
           data={groupedStories}

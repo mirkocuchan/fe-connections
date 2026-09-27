@@ -2,12 +2,12 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { API_BASE_URL } from '@/constants/api';
 import { apiFetch } from '@/utils/api';
+import { chooseImageSource } from '@/utils/imagePicker';
 import * as FileSystem from 'expo-file-system/legacy';
-import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { useCallback, useEffect, useState } from 'react';
-import { Button, FlatList, Image, Modal, Pressable, StyleSheet } from 'react-native';
+import { Alert, Button, FlatList, Image, Modal, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 
@@ -20,6 +20,11 @@ function groupStoriesByUser(stories: any[]) {
     grouped[story.user_id].push(story);
   }
   const groups = Object.values(grouped);
+  
+  for (const group of groups) {
+    group.reverse();
+  }
+
   groups.sort((a, b) => {
     const aHasUnviewed = a.some((s: any) => !s.viewed_at);
     const bHasUnviewed = b.some((s: any) => !s.viewed_at);
@@ -31,25 +36,38 @@ function groupStoriesByUser(stories: any[]) {
 
 export default function StoriesScreen() {
   const [stories, setStories] = useState<any[]>([]);
-  const [newMediaURL, setNewMediaURL] = useState("");
   const [openGroup, setOpenGroup] = useState<any[] | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [myUserID, setMyUserID] = useState("");
 
   async function fetchStories() {
     const data = await apiFetch("/stories");
     if (data) setStories(data);
   }
-
+  
   useFocusEffect(
     useCallback(() => {
       fetchStories();
     }, [])
   );
+  useEffect(() => {
+    async function loadMyID() {
+      const id = await SecureStore.getItemAsync("my_user_id");
+      setMyUserID(id || "");
+    }
+    loadMyID();
+  }, []);
 
   async function markAsViewed(story: any) {
     await apiFetch("/stories/" + story.story_id + "/view", { method: "POST" });
   }
-
+  async function handleDeleteStory() {
+    if (!openGroup) return;
+    const story = openGroup[currentIndex];
+    await apiFetch("/stories/" + story.story_id, { method: "DELETE" });
+    setOpenGroup(null);
+    fetchStories();
+  }
   function handleOpenGroup(group: any[]) {
     setOpenGroup(group);
     setCurrentIndex(0);
@@ -67,36 +85,7 @@ export default function StoriesScreen() {
       fetchStories();
     }
   }
-
-  async function handleCreateStory() {
-    if (!newMediaURL.trim()) return;
-
-    await apiFetch("/me/stories", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ media_url: newMediaURL, media_type: "image" }),
-    });
-    setNewMediaURL("");
-    fetchStories();
-  }
-  async function pickImage() {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      alert("Necesitamos permiso para acceder a tus fotos");
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 0.7,
-    });
-
-    if (result.canceled) return;
-
-    const imageUri = result.assets[0].uri;
-    await uploadAndCreateStory(imageUri);
-  }
-
+  
   async function uploadAndCreateStory(imageUri: string) {
     const token = await SecureStore.getItemAsync("token");
 
@@ -135,11 +124,32 @@ export default function StoriesScreen() {
   }, [openGroup, currentIndex]);
 
   const groupedStories = groupStoriesByUser(stories);
+  function handleStoryOptions() {
+    Alert.alert(
+      "Opciones",
+      "¿Qué querés hacer con esta historia?",
+      [
+        { text: "Borrar", onPress: confirmDeleteStory, style: "destructive" },
+        { text: "Cancelar", style: "cancel" },
+      ]
+    );
+  }
 
+  function confirmDeleteStory() {
+    Alert.alert(
+      "Confirmar",
+      "¿Realmente deseás borrar esta historia?",
+      [
+        { text: "Sí, borrar", onPress: handleDeleteStory, style: "destructive" },
+        { text: "No", style: "cancel" },
+      ]
+    );
+  }
+  
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <ThemedView style={styles.container}>
-        <Button title="📷 Publicar historia" onPress={pickImage} />
+        <Button title="📷 Publicar historia" onPress={() => chooseImageSource(uploadAndCreateStory)} />
 
         <FlatList
           data={groupedStories}
@@ -180,11 +190,21 @@ export default function StoriesScreen() {
             onPress={handleNextStory}
           >
             {openGroup && (
-              <Image
-                source={{ uri: openGroup[currentIndex].media_url }}
-                style={{ width: '90%', height: '70%' }}
-                resizeMode="contain"
-              />
+              <>
+                <Image
+                  source={{ uri: openGroup[currentIndex].media_url }}
+                  style={{ width: '90%', height: '70%' }}
+                  resizeMode="contain"
+                />
+                {openGroup[currentIndex].user_id === myUserID && (
+                  <Pressable
+                    onPress={handleStoryOptions}
+                    style={{ position: 'absolute', top: 50, right: 20, padding: 10 }}
+                  >
+                    <ThemedText style={{ fontSize: 24, color: 'white' }}>⋮</ThemedText>
+                  </Pressable>
+                )}
+              </>  
             )}
           </Pressable>
         </Modal>

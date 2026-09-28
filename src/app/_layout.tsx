@@ -1,10 +1,11 @@
 import { DarkTheme, DefaultTheme, Redirect, Stack, ThemeProvider } from 'expo-router';
+import * as SecureStore from "expo-secure-store";
 import * as SplashScreen from 'expo-splash-screen';
+import { useEffect, useState } from 'react';
 import { useColorScheme } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import * as SecureStore from "expo-secure-store";
-import { useEffect, useState } from 'react';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -16,7 +17,6 @@ export default function RootLayout() {
   useEffect(() => {
     async function checkToken() {
       const storedToken = await SecureStore.getItemAsync("token");
-      console.log("layout - token leído:", storedToken);
       setToken(storedToken);
       setIsLoading(false);
     }
@@ -26,11 +26,12 @@ export default function RootLayout() {
     return null; 
   }
   return (
-    
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
-      {!token && <Redirect href="/login" />}
-      <Stack screenOptions={{ headerShown: false }} />
-    </ThemeProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <AnimatedSplashOverlay />
+        {!token && <Redirect href="/login" />}
+        <Stack screenOptions={{ headerShown: false }} />
+      </ThemeProvider>
+    </GestureHandlerRootView>
   );
 }

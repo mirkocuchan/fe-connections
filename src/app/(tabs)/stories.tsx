@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 function groupStoriesByUser(stories: any[]) {
   const grouped: { [userID: string]: any[] } = {};
+  
   for (const story of stories) {
     if (!grouped[story.user_id]) {
       grouped[story.user_id] = [];
@@ -39,6 +40,8 @@ export default function StoriesScreen() {
   const [openGroup, setOpenGroup] = useState<any[] | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [myUserID, setMyUserID] = useState("");
+  const [viewers, setViewers] = useState<any[]>([]);
+  const [showViewers, setShowViewers] = useState(false);
 
   async function fetchStories() {
     const data = await apiFetch("/stories");
@@ -112,16 +115,22 @@ export default function StoriesScreen() {
 
     fetchStories();
   }
-
-  useEffect(() => {
+  async function handleShowViewers() {
     if (!openGroup) return;
+    const story = openGroup[currentIndex];
+    const data = await apiFetch("/stories/" + story.story_id + "/viewers");
+    setViewers(Array.isArray(data) ? data : []);
+    setShowViewers(true);
+  }
+  useEffect(() => {
+    if (!openGroup || showViewers) return;
 
     const timer = setTimeout(() => {
       handleNextStory();
     }, 5000);
 
     return () => clearTimeout(timer);
-  }, [openGroup, currentIndex]);
+  }, [openGroup, currentIndex, showViewers]);
 
   const groupedStories = groupStoriesByUser(stories);
   function handleStoryOptions() {
@@ -129,6 +138,7 @@ export default function StoriesScreen() {
       "Opciones",
       "¿Qué querés hacer con esta historia?",
       [
+        { text: "Ver quién la vio", onPress: handleShowViewers },
         { text: "Borrar", onPress: confirmDeleteStory, style: "destructive" },
         { text: "Cancelar", style: "cancel" },
       ]
@@ -187,7 +197,7 @@ export default function StoriesScreen() {
         <Modal visible={!!openGroup} transparent={true} onRequestClose={() => setOpenGroup(null)}>
           <Pressable
             style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', justifyContent: 'center', alignItems: 'center' }}
-            onPress={handleNextStory}
+            onPress={() => (showViewers ? setShowViewers(false) : handleNextStory())}
           >
             {openGroup && (
               <>
@@ -203,6 +213,28 @@ export default function StoriesScreen() {
                   >
                     <ThemedText style={{ fontSize: 24, color: 'white' }}>⋮</ThemedText>
                   </Pressable>
+                )}
+                {showViewers && (
+                  <Pressable
+                    onPress={() => {}}
+                    style={{
+                      position: 'absolute', left: 0, right: 0, bottom: 0,
+                      maxHeight: '50%', backgroundColor: '#1c1c1e',
+                      borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 16,
+                    }}
+                  >
+                  <ThemedText type="subtitle">Vistas ({viewers.length})</ThemedText>
+                  <FlatList
+                    data={viewers}
+                    keyExtractor={(item) => item.viewer_id}
+                    renderItem={({ item }) => (
+                      <ThemedText style={{ paddingVertical: 6 }}>
+                        {item.username} · {new Date(item.viewed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </ThemedText>
+                    )}
+                    ListEmptyComponent={<ThemedText>Todavía nadie la vio.</ThemedText>}
+                  />
+                </Pressable>
                 )}
               </>  
             )}

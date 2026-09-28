@@ -1,99 +1,62 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { apiFetch } from '@/utils/api';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
-import { useEffect, useState } from 'react';
-import { Button, FlatList, StyleSheet, TextInput } from 'react-native';
+import { useCallback, useState } from 'react';
+import { Button, FlatList, Image, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
 
 export default function ProfileScreen() {
   const [profile, setProfile] = useState<any>(null);
-  const [bio, setBio] = useState("");
-  const [city, setCity] = useState("");
-  const [country, setCountry] = useState("");
-  const [blockedUsers, setBlockedUsers] = useState<any[]>([]);
+  const [photos, setPhotos] = useState<any[]>([]);
 
-  async function fetchProfile() {
-    const data = await apiFetch("/me");
-    if (data) {
-      setProfile(data);
-      setBio(data.bio || "");
-      setCity(data.city || "");
-      setCountry(data.country || "");
-    }
-  }
-
-  async function handleUpdateProfile() {
-    const data = await apiFetch("/me", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ bio, city, country }),
-    });
-    if (data) setProfile(data);
-  }
+  useFocusEffect(
+    useCallback(() => {
+      async function fetchProfile() {
+        const data = await apiFetch("/me");
+        if (data) setProfile(data);
+      }
+      fetchProfile();
+      fetchPhotos();
+    }, [])
+  );
 
   async function handleLogout() {
     await SecureStore.deleteItemAsync("token");
     await SecureStore.deleteItemAsync("refresh_token");
+    await SecureStore.deleteItemAsync("my_user_id");
     router.replace("/login");
   }
-  async function fetchBlockedUsers() {
-    const data = await apiFetch("/me/blocked");
-    if (data) setBlockedUsers(data);
-  }
 
-  async function handleUnblock(userID: string) {
-    await apiFetch("/me/unblock/" + userID, {
-      method: "DELETE",
-    });
-    fetchBlockedUsers();
+  async function fetchPhotos() {
+    const data = await apiFetch("/me/photos");
+    if (data) setPhotos(data);
   }
-
-  useEffect(() => {
-    fetchProfile();
-    fetchBlockedUsers();
-  }, []);
 
   return (
-      <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView style={{ flex: 1 }}>
       <ThemedView style={styles.container}>
-        <ThemedText type="title" style={styles.title}>
-          Welcome to Profile
-        </ThemedText>
-        {profile && <ThemedText>{profile.username}</ThemedText>}
-        <TextInput
-          value={bio}
-          onChangeText={setBio}
-          placeholder="Bio"
-          style={{ color: '#ffffff', borderWidth: 1, borderColor: '#555555', padding: 8 }}
-        />
-        <TextInput
-          value={city}
-          onChangeText={setCity}
-          placeholder="Ciudad"
-          style={{ color: '#ffffff', borderWidth: 1, borderColor: '#555555', padding: 8 }}
-        />
-        <TextInput
-          value={country}
-          onChangeText={setCountry}
-          placeholder="País"
-          style={{ color: '#ffffff', borderWidth: 1, borderColor: '#555555', padding: 8 }}
-        />
-        <ThemedText type="subtitle">Usuarios bloqueados</ThemedText>
-          <FlatList
-            data={blockedUsers}
-            keyExtractor={(item) => item.blocked_id}
-            renderItem={({ item }) => (
-              <ThemedView>
-                <ThemedText>{item.blocked_id}</ThemedText>
-                <Button title="Desbloquear" onPress={() => handleUnblock(item.blocked_id)} />
-              </ThemedView>
-            )}
-          />
-        <Button title="Guardar perfil" onPress={handleUpdateProfile} />
-
+        {profile && (
+          <>
+            <FlatList
+              data={photos}
+              keyExtractor={(item) => item.photo_id}
+              horizontal
+              style={{ maxHeight: 110 }}
+              renderItem={({ item }) => (
+                <Image source={{ uri: item.photo_url }}
+                  style={{ width: 80, height: 80, borderRadius: 8, marginHorizontal: 4 }} />
+              )}
+            />
+            <ThemedText type="title">{profile.username}</ThemedText>
+            <ThemedText>{profile.bio || "Sin bio todavía"}</ThemedText>
+            <ThemedText>
+              {[profile.city, profile.country].filter(Boolean).join(", ") || "Sin ubicación"}
+            </ThemedText>
+          </>
+        )}
+        <Button title="Editar perfil" onPress={() => router.push("/edit-profile")} />
         <Button title="Cerrar sesión" onPress={handleLogout} />
       </ThemedView>
     </SafeAreaView>
@@ -101,12 +64,5 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  title: {
-    textAlign: 'center',
-  },
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 });

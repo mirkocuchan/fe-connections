@@ -1,6 +1,6 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { apiFetch } from '@/utils/api';
+import { apiFetch, apiFetchChecked } from '@/utils/api';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Alert, FlatList, Image, Modal, Pressable, StyleSheet, TextInput } from 'react-native';
@@ -36,9 +36,13 @@ export default function ChatsScreen() {
   }
 
   async function handleBlockUser(userID: string) {
-    await apiFetch("/me/block/" + userID, { method: "POST" });
-    const data = await apiFetch("/chats");
-    if (data) setChats(data);
+    const { ok, data } = await apiFetchChecked("/me/block/" + userID, { method: "POST" });
+    if (!ok) {
+      Alert.alert("No se pudo bloquear", data?.error || "Intentá de nuevo");
+      return;
+    }
+    const chatsData = await apiFetch("/chats");
+    if (chatsData) setChats(chatsData);
   }
 
   function handleReportUser(chatID: string) {

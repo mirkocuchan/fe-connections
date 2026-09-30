@@ -1,7 +1,7 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { API_BASE_URL } from '@/constants/api';
-import { apiFetch } from '@/utils/api';
+import { apiFetch, apiFetchChecked } from '@/utils/api';
 import { chooseImageSource } from '@/utils/imagePicker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { router } from 'expo-router';
@@ -86,7 +86,11 @@ export default function EditProfileScreen() {
   }
 
   async function handleDeletePhoto(photoID: string) {
-    await apiFetch("/me/photos/" + photoID, { method: "DELETE" });
+    const { ok, data } = await apiFetchChecked("/me/photos/" + photoID, { method: "DELETE" });
+    if (!ok) {
+      Alert.alert("No se pudo borrar", data?.error || "Intentá de nuevo");
+      return;
+    }
     fetchPhotos();
   }
 

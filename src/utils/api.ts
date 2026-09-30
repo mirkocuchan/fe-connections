@@ -22,3 +22,25 @@ export async function apiFetch(path: string, options: any = {}) {
 
   return response.json();
 }
+
+export async function apiFetchChecked(path: string, options: any = {}) {
+  const token = await SecureStore.getItemAsync("token");
+
+  const response = await fetch(API_BASE_URL + path, {
+    ...options,
+    headers: {
+      ...options.headers,
+      Authorization: "Bearer " + token,
+    },
+  });
+
+  if (response.status === 401) {
+    await SecureStore.deleteItemAsync("token");
+    await SecureStore.deleteItemAsync("refresh_token");
+    router.replace("/login");
+    return { ok: false, data: null };
+  }
+
+  const data = await response.json();
+  return { ok: response.ok, data };
+}

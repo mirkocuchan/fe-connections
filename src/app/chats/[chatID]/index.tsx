@@ -1,10 +1,10 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { apiFetch } from '@/utils/api';
+import { apiFetch, apiFetchChecked } from '@/utils/api';
 import { Link, router, useLocalSearchParams } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { useEffect, useState } from 'react';
-import { Button, FlatList, StyleSheet, TextInput } from 'react-native';
+import { Alert, Button, FlatList, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 
@@ -63,9 +63,13 @@ export default function ChatScreen() {
   }
 
   async function handleBlockUser() {
-    await apiFetch("/me/block/" + otherUserID, {
+    const { ok, data } = await apiFetchChecked("/me/block/" + otherUserID, {
       method: "POST",
     });
+    if (!ok) {
+      Alert.alert("No se pudo bloquear", data?.error || "Intentá de nuevo");
+      return;
+    }
     router.replace("/(tabs)");
   }
 

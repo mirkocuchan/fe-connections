@@ -1,10 +1,10 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { apiFetch } from '@/utils/api';
+import { apiFetch, apiFetchChecked } from '@/utils/api';
 import { useLocalSearchParams } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { useEffect, useState } from 'react';
-import { Button, StyleSheet, TextInput } from 'react-native';
+import { Alert, Button, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function CardScreen() {
@@ -34,32 +34,48 @@ export default function CardScreen() {
   }
 
   async function handleReveal(field: string) {
-    await apiFetch("/chats/" + chatID + "/card/reveal/" + field, {
+    const { ok, data } = await apiFetchChecked("/chats/" + chatID + "/card/reveal/" + field, {
       method: "POST",
     });
+    if (!ok) {
+      Alert.alert("No se pudo revelar", data?.error || "Intentá de nuevo");
+      return;
+    }
     fetchCard();
   }
 
   async function handleSaveNotes() {
-    await apiFetch("/chats/" + chatID + "/card/notes", {
+    const { ok, data } = await apiFetchChecked("/chats/" + chatID + "/card/notes", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ notes_on_subject: notesInput }),
     });
+    if (!ok) {
+      Alert.alert("No se pudieron guardar las notas", data?.error || "Intentá de nuevo");
+      return;
+    }
     fetchCard();
   }
 
   async function handleRevealAll() {
-    await apiFetch("/chats/" + chatID + "/card/reveal-all", {
+    const { ok, data } = await apiFetchChecked("/chats/" + chatID + "/card/reveal-all", {
       method: "POST",
     });
+    if (!ok) {
+      Alert.alert("No se pudo revelar todo", data?.error || "Intentá de nuevo");
+      return;
+    }
     fetchCard();
   }
 
   async function handleResetCard() {
-    await apiFetch("/chats/" + chatID + "/card/reset", {
+    const { ok, data } = await apiFetchChecked("/chats/" + chatID + "/card/reset", {
       method: "PATCH",
     });
+    if (!ok) {
+      Alert.alert("No se pudo resetear", data?.error || "Intentá de nuevo");
+      return;
+    }
     fetchCard();
   }
 

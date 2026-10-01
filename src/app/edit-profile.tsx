@@ -32,16 +32,24 @@ export default function EditProfileScreen() {
   }
 
   async function handleSave() {
-    await apiFetch("/me", {
+    const { ok, data } = await apiFetchChecked("/me", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ bio, city, country }),
     });
+    if (!ok) {
+      Alert.alert("No se pudo guardar", data?.error || "Intentá de nuevo");
+      return;
+    }
     router.back();
   }
 
   async function handleUnblock(userID: string) {
-    await apiFetch("/me/unblock/" + userID, { method: "DELETE" });
+    const { ok, data } = await apiFetchChecked("/me/unblock/" + userID, { method: "DELETE" });
+    if (!ok) {
+      Alert.alert("No se pudo desbloquear", data?.error || "Intentá de nuevo");
+      return;
+    }
     fetchBlockedUsers();
   }
 

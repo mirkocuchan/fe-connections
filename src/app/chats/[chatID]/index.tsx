@@ -24,11 +24,15 @@ export default function ChatScreen() {
   }
 
   async function handleSendMessage() {
-    await apiFetch("/chats/" + chatID + "/messages", {
+    const { ok, data } = await apiFetchChecked("/chats/" + chatID + "/messages", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ content }),
     });
+    if (!ok) {
+      Alert.alert("No se pudo enviar", data?.error || "Intentá de nuevo");
+      return;
+    }
     setContent("");
     fetchMessages();
   }
@@ -53,11 +57,15 @@ export default function ChatScreen() {
   }
 
   async function handleSetNickname() {
-    await apiFetch("/chats/" + chatID + "/card/nickname", {
+    const { ok, data } = await apiFetchChecked("/chats/" + chatID + "/card/nickname", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ nickname: nicknameInput }),
     });
+    if (!ok) {
+      Alert.alert("No se pudo guardar el apodo", data?.error || "Intentá de nuevo");
+      return;
+    }
     setNicknameInput("");
     fetchCard();
   }
@@ -74,11 +82,16 @@ export default function ChatScreen() {
   }
 
   async function handleReport(reason: string) {
-    await apiFetch("/me/report/" + otherUserID, {
+    const { ok, data } = await apiFetchChecked("/me/report/" + otherUserID, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ reason, details: reportDetails }),
     });
+    if (!ok) {
+      Alert.alert("No se pudo reportar", data?.error || "Intentá de nuevo");
+      return;
+    }
+    Alert.alert("Reportado", "Gracias, vamos a revisarlo.");
     setReportDetails("");
   }
   

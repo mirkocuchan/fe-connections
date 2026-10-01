@@ -1,7 +1,7 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { API_BASE_URL } from '@/constants/api';
-import { apiFetch } from '@/utils/api';
+import { apiFetch, apiFetchChecked } from '@/utils/api';
 import { chooseImageSource } from '@/utils/imagePicker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useFocusEffect } from 'expo-router';
@@ -35,6 +35,14 @@ function groupStoriesByUser(stories: any[]) {
   return groups;
 }
 
+function timeAgo(dateString: string) {
+  const diffMs = Date.now() - new Date(dateString).getTime();
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  if (diffHours < 1) return "hace unos minutos";
+  if (diffHours === 1) return "hace 1 hora";
+  return `hace ${diffHours} horas`;
+}
+
 export default function StoriesScreen() {
   const [stories, setStories] = useState<any[]>([]);
   const [openGroup, setOpenGroup] = useState<any[] | null>(null);
@@ -64,13 +72,20 @@ export default function StoriesScreen() {
   async function markAsViewed(story: any) {
     await apiFetch("/stories/" + story.story_id + "/view", { method: "POST" });
   }
+  
   async function handleDeleteStory() {
     if (!openGroup) return;
     const story = openGroup[currentIndex];
-    await apiFetch("/stories/" + story.story_id, { method: "DELETE" });
+    const { ok, data } = await apiFetchChecked("/stories/" + story.story_id, { method: "DELETE" });
+    if (!ok) {
+      Alert.alert("No se pudo borrar", data?.error || "Intentá de nuevo");
+      setOpenGroup(null);
+      return;
+    }
     setOpenGroup(null);
     fetchStories();
   }
+
   function handleOpenGroup(group: any[]) {
     setOpenGroup(group);
     setCurrentIndex(0);
@@ -99,22 +114,29 @@ export default function StoriesScreen() {
         httpMethod: "POST",
         uploadType: FileSystem.FileSystemUploadType.MULTIPART,
         fieldName: "file",
-        headers: {
-          Authorization: "Bearer " + token,
-        },
+        headers: { Authorization: "Bearer " + token },
       }
     );
 
-    const uploadData = JSON.parse(uploadResult.body);
+    if (uploadResult.status !== 200) {
+      Alert.alert("No se pudo subir la imagen", "Intentá de nuevo");
+      return;
+    }
 
-    await apiFetch("/me/stories", {
+    const uploadData = JSON.parse(uploadResult.body);
+    const { ok, data } = await apiFetchChecked("/me/stories", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ media_url: uploadData.url, media_type: "image" }),
     });
+    if (!ok) {
+      Alert.alert("No se pudo publicar la historia", data?.error || "Intentá de nuevo");
+      return;
+    }
 
     fetchStories();
   }
+
   async function handleShowViewers() {
     if (!openGroup) return;
     const story = openGroup[currentIndex];
@@ -155,7 +177,7 @@ export default function StoriesScreen() {
       ]
     );
   }
-  
+
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <ThemedView style={styles.container}>
@@ -201,6 +223,14 @@ export default function StoriesScreen() {
           >
             {openGroup && (
               <>
+                <ThemedView style={{ position: 'absolute', top: 50, left: 20 }}>
+                  <ThemedText style={{ color: 'white', fontWeight: 'bold' }}>
+                    {openGroup[currentIndex].username}
+                  </ThemedText>
+                  <ThemedText style={{ color: '#ccc', fontSize: 12 }}>
+                    {timeAgo(openGroup[currentIndex].created_at)}
+                  </ThemedText>
+                </ThemedView>
                 <Image
                   source={{ uri: openGroup[currentIndex].media_url }}
                   style={{ width: '90%', height: '70%' }}

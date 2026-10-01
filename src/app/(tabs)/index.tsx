@@ -30,9 +30,13 @@ export default function ChatsScreen() {
   }
 
   async function handleDeleteChat(chatID: string) {
-    await apiFetch("/chats/" + chatID, { method: "DELETE" });
-    const data = await apiFetch("/chats");
-    if (data) setChats(data);
+    const { ok, data } = await apiFetchChecked("/chats/" + chatID, { method: "DELETE" });
+    if (!ok) {
+      Alert.alert("No se pudo borrar", data?.error || "Intentá de nuevo");
+      return;
+    }
+    const chatsData = await apiFetch("/chats");
+    if (chatsData) setChats(chatsData);
   }
 
   async function handleBlockUser(userID: string) {

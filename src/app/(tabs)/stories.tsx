@@ -7,7 +7,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { useFocusEffect } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Button, FlatList, Image, Modal, Pressable, StyleSheet } from 'react-native';
+import { ActivityIndicator, Alert, Button, FlatList, Image, Modal, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 
@@ -50,6 +50,7 @@ export default function StoriesScreen() {
   const [myUserID, setMyUserID] = useState("");
   const [viewers, setViewers] = useState<any[]>([]);
   const [showViewers, setShowViewers] = useState(false);
+  const [imageLoading, setImageLoading] = useState(true);
 
   async function fetchStories() {
     const data = await apiFetch("/stories");
@@ -223,7 +224,15 @@ export default function StoriesScreen() {
           >
             {openGroup && (
               <>
-                <ThemedView style={{ position: 'absolute', top: 50, left: 20 }}>
+                <ThemedView
+                  style={{
+                    position: 'absolute',
+                    top: 50,
+                    left: 20,
+                    zIndex: 10,
+                    backgroundColor: 'transparent',
+                  }}
+                >
                   <ThemedText style={{ color: 'white', fontWeight: 'bold' }}>
                     {openGroup[currentIndex].username}
                   </ThemedText>
@@ -235,7 +244,12 @@ export default function StoriesScreen() {
                   source={{ uri: openGroup[currentIndex].media_url }}
                   style={{ width: '90%', height: '70%' }}
                   resizeMode="contain"
+                  onLoadStart={() => setImageLoading(true)}
+                  onLoadEnd={() => setImageLoading(false)}
                 />
+                {imageLoading && (
+                  <ActivityIndicator size="large" color="#fff" style={{ position: 'absolute' }} />
+                )}
                 {openGroup[currentIndex].user_id === myUserID && (
                   <Pressable
                     onPress={handleStoryOptions}

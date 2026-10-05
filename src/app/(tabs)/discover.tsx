@@ -2,7 +2,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { apiFetch } from '@/utils/api';
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Button, FlatList, Image, Modal, Pressable, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -10,6 +10,7 @@ export default function DiscoverScreen() {
   const [users, setUsers] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [zoomedPhoto, setZoomedPhoto] = useState<string | null>(null);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
 
   async function fetchDiscoverUsers() {
     const data = await apiFetch("/users/discover");
@@ -21,6 +22,23 @@ export default function DiscoverScreen() {
       fetchDiscoverUsers();
     }, [])
   );
+
+  useEffect(() => {
+    const q = searchQuery.trim();
+    if (q === "") {
+      setSearchResults([]);
+      return;
+    }
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      const data = await apiFetch("/users/search?q=" + encodeURIComponent(q));
+      if (!cancelled && Array.isArray(data)) setSearchResults(data);
+    }, 400);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [searchQuery]);
 
   async function handlePressUser(user: any) {
     const data = await apiFetch("/chats", {
@@ -36,9 +54,8 @@ export default function DiscoverScreen() {
     }
   }
 
-  const filteredUsers = users.filter((user) =>
-    user.display_name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const isSearching = searchQuery.trim() !== "";
+  const listData = isSearching ? searchResults : users;
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
@@ -51,7 +68,7 @@ export default function DiscoverScreen() {
         />
         <Button title="🔀 Reshuffle" onPress={fetchDiscoverUsers} />
         <FlatList
-          data={filteredUsers}
+          data={listData}
           keyExtractor={(item) => item.user_id}
           renderItem={({ item }) => (
             <Pressable onPress={() => handlePressUser(item)}>
@@ -62,7 +79,7 @@ export default function DiscoverScreen() {
                     style={{ width: 50, height: 50, borderRadius: 25 }}
                   />
                 </Pressable>
-                <ThemedText>{item.display_name}</ThemedText>
+                <ThemedText>{item.display_name ?? item.username}</ThemedText>
               </ThemedView>
             </Pressable>
           )}

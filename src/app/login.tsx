@@ -1,6 +1,7 @@
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { API_BASE_URL } from "@/constants/api";
+import { getLocales } from "expo-localization";
 import { Link, router } from 'expo-router';
 import * as SecureStore from "expo-secure-store";
 import { useState } from "react";
@@ -14,11 +15,12 @@ export default function LoginScreen() {
 
   async function handleLogin() {
     setErrorMessage("");
+    const regionCode = getLocales()[0]?.regionCode ?? "";
     try {
       const response = await fetch(API_BASE_URL + "/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, region_code: regionCode }),
       });
       const data = await response.json();
 

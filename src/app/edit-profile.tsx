@@ -7,7 +7,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { useEffect, useState } from 'react';
-import { Alert, Button, FlatList, Image, Pressable, StyleSheet, TextInput } from 'react-native';
+import { Alert, Button, Image, Pressable, StyleSheet, TextInput } from 'react-native';
 import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -15,7 +15,6 @@ export default function EditProfileScreen() {
   const [bio, setBio] = useState("");
   const [city, setCity] = useState("");
   const [country, setCountry] = useState("");
-  const [blockedUsers, setBlockedUsers] = useState<any[]>([]);
 
   async function fetchProfile() {
     const data = await apiFetch("/me");
@@ -24,11 +23,6 @@ export default function EditProfileScreen() {
       setCity(data.city || "");
       setCountry(data.country || "");
     }
-  }
-
-  async function fetchBlockedUsers() {
-    const data = await apiFetch("/me/blocked");
-    if (data) setBlockedUsers(data);
   }
 
   async function handleSave() {
@@ -42,15 +36,6 @@ export default function EditProfileScreen() {
       return;
     }
     router.back();
-  }
-
-  async function handleUnblock(userID: string) {
-    const { ok, data } = await apiFetchChecked("/me/unblock/" + userID, { method: "DELETE" });
-    if (!ok) {
-      Alert.alert("No se pudo desbloquear", data?.error || "Intentá de nuevo");
-      return;
-    }
-    fetchBlockedUsers();
   }
 
   const [photos, setPhotos] = useState<any[]>([]);
@@ -114,7 +99,6 @@ export default function EditProfileScreen() {
 
   useEffect(() => {
     fetchProfile();
-    fetchBlockedUsers();
     fetchPhotos()
   }, []);
 
@@ -151,17 +135,6 @@ export default function EditProfileScreen() {
         <Button title="Guardar" onPress={handleSave} />
 
         <ThemedText type="subtitle">Usuarios bloqueados</ThemedText>
-        <FlatList
-          data={blockedUsers}
-          keyExtractor={(item) => item.blocked_id}
-          renderItem={({ item }) => (
-            <ThemedView>
-              <ThemedText>{item.username}</ThemedText>
-              <Button title="Desbloquear" onPress={() => handleUnblock(item.blocked_id)} />
-            </ThemedView>
-          )}
-          ListEmptyComponent={<ThemedText>No bloqueaste a nadie.</ThemedText>}
-        />
       </ThemedView>
     </SafeAreaView>
   );

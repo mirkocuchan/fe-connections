@@ -1,1 +1,5 @@
-export const API_BASE_URL = "http://192.168.1.101:8080";
+import Constants from "expo-constants";
+
+const host = Constants.expoConfig?.hostUri?.split(":")[0];
+
+export const API_BASE_URL = host ? `http://${host}:8080` : "http://localhost:8080";

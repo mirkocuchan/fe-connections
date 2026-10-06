@@ -1,10 +1,10 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { apiFetch } from '@/utils/api';
+import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
-import * as SecureStore from 'expo-secure-store';
 import { useCallback, useState } from 'react';
-import { Button, FlatList, Image, StyleSheet } from 'react-native';
+import { Button, FlatList, Image, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function ProfileScreen() {
@@ -21,13 +21,6 @@ export default function ProfileScreen() {
       fetchPhotos();
     }, [])
   );
-
-  async function handleLogout() {
-    await SecureStore.deleteItemAsync("token");
-    await SecureStore.deleteItemAsync("refresh_token");
-    await SecureStore.deleteItemAsync("my_user_id");
-    router.replace("/login");
-  }
 
   async function fetchPhotos() {
     const data = await apiFetch("/me/photos");
@@ -56,8 +49,14 @@ export default function ProfileScreen() {
             </ThemedText>
           </>
         )}
+        <Pressable
+          onPress={() => router.push("/settings")}
+          hitSlop={10}
+          style={{ position: 'absolute', top: 8, right: 16 }}
+        >
+          <Ionicons name="settings-outline" size={26} color="#ffffff" />
+        </Pressable>
         <Button title="Editar perfil" onPress={() => router.push("/edit-profile")} />
-        <Button title="Cerrar sesión" onPress={handleLogout} />
       </ThemedView>
     </SafeAreaView>
   );

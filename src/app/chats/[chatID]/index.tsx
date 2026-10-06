@@ -17,6 +17,7 @@ export default function ChatScreen() {
   const [otherUserID, setOtherUserID] = useState("");
   const [reportDetails, setReportDetails] = useState("");
   const [myUserID, setMyUserID] = useState("");
+  const [blocked, setBlocked] = useState(false);
 
   async function fetchMessages() {
     const data = await apiFetch("/chats/" + chatID + "/messages");
@@ -38,7 +39,11 @@ export default function ChatScreen() {
   }
 
   async function fetchCard() {
-    const data = await apiFetch("/chats/" + chatID + "/card");
+    const { ok, data } = await apiFetchChecked("/chats/" + chatID + "/card");
+    if (!ok) {
+      setBlocked(true);
+      return;
+    }
     if (!data) return;
 
     setOtherUserID(data.subject_id);
@@ -105,6 +110,18 @@ export default function ChatScreen() {
     fetchMessages();
     fetchCard();
   }, []);
+
+  if (blocked) {
+    return (
+      <SafeAreaView style={{ flex: 1 }}>
+        <ThemedView style={styles.container}>
+          <Button title="← Volver" onPress={() => router.back()} />
+          <ThemedText type="title">Chat no disponible</ThemedText>
+          <ThemedText>No podés enviar mensajes en este chat.</ThemedText>
+        </ThemedView>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={{ flex: 1 }}>

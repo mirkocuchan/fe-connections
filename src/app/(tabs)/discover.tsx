@@ -40,18 +40,11 @@ export default function DiscoverScreen() {
     };
   }, [searchQuery]);
 
-  async function handlePressUser(user: any) {
-    const data = await apiFetch("/chats", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ other_user_id: user.user_id }),
+  function handlePressUser(user: any) {
+    router.push({
+      pathname: "/chats/new",
+      params: { userID: user.user_id, name: user.display_name ?? user.username },
     });
-    if (data) {
-      router.push({
-        pathname: "/chats/[chatID]",
-        params: { chatID: data.chat_id },
-      });
-    }
   }
 
   const isSearching = searchQuery.trim() !== "";

@@ -1,3 +1,4 @@
+import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import { Alert } from 'react-native';
 
@@ -21,7 +22,7 @@ async function takePhoto(onImagePicked: (uri: string) => void) {
   }
   const result = await ImagePicker.launchCameraAsync({ quality: 0.7 });
   if (result.canceled) return;
-  onImagePicked(result.assets[0].uri);
+  onImagePicked(await shrinkImage(result.assets[0].uri));
 }
 
 async function pickFromLibrary(onImagePicked: (uri: string) => void) {
@@ -35,5 +36,13 @@ async function pickFromLibrary(onImagePicked: (uri: string) => void) {
     quality: 0.7,
   });
   if (result.canceled) return;
-  onImagePicked(result.assets[0].uri);
+  onImagePicked(await shrinkImage(result.assets[0].uri));
+}
+
+async function shrinkImage(uri: string): Promise<string> {
+  const context = ImageManipulator.manipulate(uri);
+  context.resize({ width: 1080 });
+  const image = await context.renderAsync();
+  const result = await image.saveAsync({ compress: 0.7, format: SaveFormat.JPEG });
+  return result.uri;
 }

@@ -49,18 +49,38 @@ export default function ChatsScreen() {
     if (chatsData) setChats(chatsData);
   }
 
-  function handleReportUser(chatID: string) {
-    router.push({ pathname: "/chats/[chatID]", params: { chatID } });
+  async function handleUnblockUser(userID: string) {
+    const { ok, data } = await apiFetchChecked("/me/unblock/" + userID, { method: "DELETE" });
+    if (!ok) {
+      Alert.alert("No se pudo desbloquear", data?.error || "Intentá de nuevo");
+      return;
+    }
+    const chatsData = await apiFetch("/chats");
+    if (chatsData) setChats(chatsData);
   }
 
+  function openChat(item: any) {
+    router.push({
+      pathname: "/chats/[chatID]",
+      params: {
+        chatID: item.chat_id,
+        nickname: item.nickname,
+        otherUserID: item.other_user_id,
+        blocked: item.blocked ? "1" : "0",
+      },
+    });
+  }
+  
   function showChatOptions(item: any) {
     Alert.alert(
       "Opciones",
       "¿Qué querés hacer con este chat?",
       [
         { text: "Borrar", onPress: () => handleDeleteChat(item.chat_id), style: "destructive" },
-        { text: "Bloquear", onPress: () => handleBlockUser(item.other_user_id) },
-        { text: "Reportar", onPress: () => handleReportUser(item.chat_id) },
+        item.blocked
+        ? { text: "Desbloquear", onPress: () => handleUnblockUser(item.other_user_id) }
+        : { text: "Bloquear", onPress: () => handleBlockUser(item.other_user_id) },
+        { text: "Reportar", onPress: () => openChat(item) },
         { text: "Cancelar", style: "cancel" },
       ]
     );
@@ -86,7 +106,7 @@ export default function ChatsScreen() {
           onRefresh={handleRefresh}
           renderItem={({ item }) => (
             <Pressable
-              onPress={() => router.push({ pathname: "/chats/[chatID]", params: { chatID: item.chat_id } })}
+              onPress={() => openChat(item)}
               onLongPress={() => showChatOptions(item)}
             >
               <ThemedView style={{ flexDirection: 'row', alignItems: 'center', padding: 8, gap: 8 }}>
@@ -98,6 +118,7 @@ export default function ChatsScreen() {
                 </Pressable>
                 <ThemedView>
                   <ThemedText>{item.nickname}</ThemedText>
+                  {item.blocked && <ThemedText>Bloqueado</ThemedText>}
                   <ThemedText>{item.last_message}</ThemedText>
                 </ThemedView>
               </ThemedView>

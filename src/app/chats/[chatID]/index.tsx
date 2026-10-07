@@ -9,15 +9,17 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 
 export default function ChatScreen() {
-  const { chatID } = useLocalSearchParams();
+  const { chatID, nickname, otherUserID: otherParam, blocked: blockedParam } = useLocalSearchParams();
+  const iBlocked = blockedParam === "1";
+  const [readOnly, setReadOnly] = useState(iBlocked);
+  const [chatName, setChatName] = useState((nickname as string) || "Chat");
+  const [otherUserID, setOtherUserID] = useState((otherParam as string) || "");
   const [messages, setMessages] = useState<any[]>([]);
   const [content, setContent] = useState("");
-  const [chatName, setChatName] = useState("Chat");
   const [nicknameInput, setNicknameInput] = useState("");
-  const [otherUserID, setOtherUserID] = useState("");
   const [reportDetails, setReportDetails] = useState("");
   const [myUserID, setMyUserID] = useState("");
-  const [blocked, setBlocked] = useState(false);
+  const [isInitiator, setIsInitiator] = useState(false);
 
   async function fetchMessages() {
     const data = await apiFetch("/chats/" + chatID + "/messages");
@@ -41,7 +43,7 @@ export default function ChatScreen() {
   async function fetchCard() {
     const { ok, data } = await apiFetchChecked("/chats/" + chatID + "/card");
     if (!ok) {
-      setBlocked(true);
+      setReadOnly(true);
       return;
     }
     if (!data) return;
@@ -50,6 +52,7 @@ export default function ChatScreen() {
 
     const myUserID = await SecureStore.getItemAsync("my_user_id");
     const isInitiator = myUserID === data.user_one_id;
+    setIsInitiator(isInitiator);
 
     if (data.nickname && data.nickname.Valid && data.nickname.String !== "") {
       setChatName(data.nickname.String);
@@ -111,44 +114,35 @@ export default function ChatScreen() {
     fetchCard();
   }, []);
 
-  if (blocked) {
-    return (
-      <SafeAreaView style={{ flex: 1 }}>
-        <ThemedView style={styles.container}>
-          <Button title="← Volver" onPress={() => router.back()} />
-          <ThemedText type="title">Chat no disponible</ThemedText>
-          <ThemedText>No podés enviar mensajes en este chat.</ThemedText>
-        </ThemedView>
-      </SafeAreaView>
-    );
-  }
-
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <ThemedView style={styles.container}>
-        <Link
-          href={{
-            pathname: "/users/[userID]",
-            params: { userID: otherUserID },
-          }}
-        >
+        {readOnly && !isInitiator ? (
           <ThemedText type="title">{chatName}</ThemedText>
-        </Link>
-        <Link
-          href={{
-            pathname: "/chats/[chatID]/card",
-            params: { chatID: chatID as string },
-          }}
-        >
-          <ThemedText>Ver ficha</ThemedText>
-        </Link>
-        <TextInput
-          value={nicknameInput}
-          onChangeText={setNicknameInput}
-          placeholder="Ponerle un apodo..."
-          style={{ color: '#ffffff', borderWidth: 1, borderColor: '#555555', padding: 8 }}
-        />
-        <Button title="Guardar apodo" onPress={handleSetNickname} />
+        ) : (
+          <>
+            <Link href={{ pathname: "/users/[userID]", params: { userID: otherUserID } }}>
+              <ThemedText type="title">{chatName}</ThemedText>
+            </Link>
+            <Link href={{ pathname: "/chats/[chatID]/card", params: { chatID: chatID as string } }}>
+              <ThemedText>Ver ficha</ThemedText>
+            </Link>
+            <TextInput
+              value={nicknameInput}
+              onChangeText={setNicknameInput}
+              placeholder="Ponerle un apodo..."
+              style={{ color: '#ffffff', borderWidth: 1, borderColor: '#555555', padding: 8 }}
+            />
+            <Button title="Guardar apodo" onPress={handleSetNickname} />
+          </>
+        )}
+        {readOnly && (
+          <ThemedText>
+            {iBlocked
+              ? "Bloqueaste a este usuario. Podés leer la conversación, pero no enviar mensajes."
+              : "No se pueden enviar mensajes en este chat."}
+          </ThemedText>
+        )}
         <FlatList
           data={messages}
           keyExtractor={(item) => item.message_id}
@@ -170,14 +164,18 @@ export default function ChatScreen() {
             <ThemedText>Todavía no hay mensajes. ¡Escribí el primero!</ThemedText>
           }
         />
-        <TextInput
-          value={content}
-          onChangeText={setContent}
-          placeholder="Escribí un mensaje..."
-          style={{ color: '#ffffff', borderWidth: 1, borderColor: '#555555', padding: 8 }}
-        />
-        <Button title="Enviar" onPress={handleSendMessage} />
-        <Button title="Bloquear usuario" onPress={handleBlockUser} />
+        {!readOnly && (
+          <>
+            <TextInput
+              value={content}
+              onChangeText={setContent}
+              placeholder="Escribí un mensaje..."
+              style={{ color: '#ffffff', borderWidth: 1, borderColor: '#555555', padding: 8 }}
+            />
+            <Button title="Enviar" onPress={handleSendMessage} />
+            <Button title="Bloquear usuario" onPress={handleBlockUser} />
+          </>
+        )}
 
         <ThemedText type="subtitle">Reportar</ThemedText>
         <TextInput

@@ -70,7 +70,15 @@ export default function SettingsScreen() {
           <ThemedText style={{ flex: 1 }}>Usuarios bloqueados</ThemedText>
           <ThemedText>›</ThemedText>
         </Pressable>
+        <Pressable style={styles.row} onPress={() => router.push("/change-password")}>
+          <ThemedText style={{ flex: 1 }}>Cambiar contraseña</ThemedText>
+          <ThemedText>›</ThemedText>
+        </Pressable>
         <Button title="Cerrar sesión" onPress={handleLogout} />
+          <Pressable style={styles.row} onPress={() => router.push("/delete-account")}>
+            <ThemedText style={{ flex: 1, color: '#ff4d4d' }}>Eliminar cuenta</ThemedText>
+            <ThemedText>›</ThemedText>
+          </Pressable>
       </ThemedView>
     </SafeAreaView>
   );

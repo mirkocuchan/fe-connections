@@ -2,6 +2,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { API_BASE_URL } from '@/constants/api';
 import { apiFetch, apiFetchChecked } from '@/utils/api';
+import { unregisterPush } from '@/utils/push';
 import { router, useFocusEffect } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { useCallback, useState } from 'react';
@@ -36,6 +37,7 @@ export default function SettingsScreen() {
   }
 
   async function handleLogout() {
+    await unregisterPush(); //antes de borrar el JWT el endpoint necesita estar autenticado
     const refreshToken = await SecureStore.getItemAsync("refresh_token");
     try {
       await fetch(API_BASE_URL + "/logout", {

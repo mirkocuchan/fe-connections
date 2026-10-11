@@ -1,6 +1,7 @@
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { API_BASE_URL } from "@/constants/api";
+import { registerForPush } from "@/utils/push";
 import { getLocales } from "expo-localization";
 import { Link, router } from 'expo-router';
 import * as SecureStore from "expo-secure-store";
@@ -32,6 +33,9 @@ export default function LoginScreen() {
       await SecureStore.setItemAsync("token", data.token);
       await SecureStore.setItemAsync("refresh_token", data.refresh_token);
       await SecureStore.setItemAsync("my_user_id", data.id);
+      registerForPush(); // sin await: no frena el login
+      router.replace("/(tabs)");
+      
       router.replace("/(tabs)");
     } catch (error) {
       setErrorMessage("No se pudo conectar con el servidor");

@@ -2,7 +2,6 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { apiFetch, apiFetchChecked } from '@/utils/api';
 import { useLocalSearchParams } from 'expo-router';
-import * as SecureStore from 'expo-secure-store';
 import { useEffect, useState } from 'react';
 import { Alert, Button, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,21 +15,10 @@ export default function CardScreen() {
   async function fetchCard() {
     const data = await apiFetch("/chats/" + chatID + "/card");
     if (!data) return;
-
+   
     setCard(data);
     setNotesInput(data.notes_on_subject?.Valid ? data.notes_on_subject.String : "");
-    
-    const myUserID = await SecureStore.getItemAsync("my_user_id");
-    const isInitiator = myUserID === data.user_one_id;
-
-    if (data.nickname && data.nickname.Valid) {
-      setChatName(data.nickname.String);
-    } else if (isInitiator) {
-      const profile = await apiFetch("/users/" + data.subject_id + "/profile");
-      if (profile) setChatName(profile.username);
-    } else {
-      setChatName("anon-" + data.subject_id.slice(0, 8));
-    }
+    setChatName(data.chat_name);
   }
 
   async function handleReveal(field: string) {

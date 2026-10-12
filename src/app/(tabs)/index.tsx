@@ -39,8 +39,8 @@ export default function ChatsScreen() {
     if (chatsData) setChats(chatsData);
   }
 
-  async function handleBlockUser(userID: string) {
-    const { ok, data } = await apiFetchChecked("/me/block/" + userID, { method: "POST" });
+  async function handleBlockUser(chatID: string) {
+    const { ok, data } = await apiFetchChecked("/chats/" + chatID + "/block", { method: "POST" });
     if (!ok) {
       Alert.alert("No se pudo bloquear", data?.error || "Intentá de nuevo");
       return;
@@ -49,8 +49,8 @@ export default function ChatsScreen() {
     if (chatsData) setChats(chatsData);
   }
 
-  async function handleUnblockUser(userID: string) {
-    const { ok, data } = await apiFetchChecked("/me/unblock/" + userID, { method: "DELETE" });
+  async function handleUnblockUser(chatID: string) {
+    const { ok, data } = await apiFetchChecked("/chats/" + chatID + "/block", { method: "DELETE" });
     if (!ok) {
       Alert.alert("No se pudo desbloquear", data?.error || "Intentá de nuevo");
       return;
@@ -65,7 +65,6 @@ export default function ChatsScreen() {
       params: {
         chatID: item.chat_id,
         nickname: item.nickname,
-        otherUserID: item.other_user_id,
         blocked: item.blocked ? "1" : "0",
       },
     });
@@ -78,8 +77,8 @@ export default function ChatsScreen() {
       [
         { text: "Borrar", onPress: () => handleDeleteChat(item.chat_id), style: "destructive" },
         item.blocked
-        ? { text: "Desbloquear", onPress: () => handleUnblockUser(item.other_user_id) }
-        : { text: "Bloquear", onPress: () => handleBlockUser(item.other_user_id) },
+          ? { text: "Desbloquear", onPress: () => handleUnblockUser(item.chat_id) }
+          : { text: "Bloquear", onPress: () => handleBlockUser(item.chat_id) },
         { text: "Reportar", onPress: () => openChat(item) },
         { text: "Cancelar", style: "cancel" },
       ]

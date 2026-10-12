@@ -14,8 +14,11 @@ export default function BlockedUsersScreen() {
     if (data) setBlockedUsers(data);
   }
 
-  async function handleUnblock(userID: string) {
-    const { ok, data } = await apiFetchChecked("/me/unblock/" + userID, { method: "DELETE" });
+  async function handleUnblock(item: any) {
+    const path = item.chat_id
+      ? "/chats/" + item.chat_id + "/block"
+      : "/me/unblock/" + item.blocked_id;
+    const { ok, data } = await apiFetchChecked(path, { method: "DELETE" });
     if (!ok) {
       Alert.alert("No se pudo desbloquear", data?.error || "Intentá de nuevo");
       return;
@@ -34,11 +37,11 @@ export default function BlockedUsersScreen() {
         <ThemedText type="title">Usuarios bloqueados</ThemedText>
         <FlatList
           data={blockedUsers}
-          keyExtractor={(item) => item.blocked_id}
+          keyExtractor={(item, index) => item.chat_id ?? item.blocked_id ?? String(index)}
           renderItem={({ item }) => (
             <ThemedView style={styles.row}>
               <ThemedText style={{ flex: 1 }}>{item.username}</ThemedText>
-              <Button title="Desbloquear" onPress={() => handleUnblock(item.blocked_id)} />
+              <Button title="Desbloquear" onPress={() => handleUnblock(item)} />
             </ThemedView>
           )}
           ListEmptyComponent={<ThemedText>No bloqueaste a nadie.</ThemedText>}

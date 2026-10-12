@@ -270,7 +270,7 @@ export default function StoriesScreen() {
                   <ThemedText type="subtitle">Vistas ({viewers.length})</ThemedText>
                   <FlatList
                     data={viewers}
-                    keyExtractor={(item) => item.viewer_id}
+                    keyExtractor={(item, index) => item.viewer_id ?? "anon-" + index}
                     renderItem={({ item }) => (
                       <ThemedText style={{ paddingVertical: 6 }}>
                         {item.username} · {new Date(item.viewed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}

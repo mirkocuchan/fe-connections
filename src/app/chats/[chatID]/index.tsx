@@ -2,7 +2,6 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { apiFetch, apiFetchChecked } from '@/utils/api';
 import { Link, router, useLocalSearchParams } from 'expo-router';
-import * as SecureStore from 'expo-secure-store';
 import { useEffect, useState } from 'react';
 import { Alert, Button, FlatList, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,7 +17,6 @@ export default function ChatScreen() {
   const [content, setContent] = useState("");
   const [nicknameInput, setNicknameInput] = useState("");
   const [reportDetails, setReportDetails] = useState("");
-  const [myUserID, setMyUserID] = useState("");
   const [isInitiator, setIsInitiator] = useState(false);
 
   async function fetchMessages() {
@@ -48,20 +46,9 @@ export default function ChatScreen() {
     }
     if (!data) return;
 
-    setOtherUserID(data.subject_id);
-
-    const myUserID = await SecureStore.getItemAsync("my_user_id");
-    const isInitiator = myUserID === data.user_one_id;
-    setIsInitiator(isInitiator);
-
-    if (data.nickname && data.nickname.Valid && data.nickname.String !== "") {
-      setChatName(data.nickname.String);
-    } else if (isInitiator) {
-      const profile = await apiFetch("/users/" + data.subject_id + "/profile");
-      if (profile) setChatName(profile.username);
-    } else {
-      setChatName("anon-" + data.subject_id.slice(0, 8));
-    }
+    setIsInitiator(data.is_initiator);
+    setChatName(data.chat_name);
+    setOtherUserID(data.subject_id ?? "");
   }
 
   async function handleSetNickname() {
@@ -79,7 +66,7 @@ export default function ChatScreen() {
   }
 
   async function handleBlockUser() {
-    const { ok, data } = await apiFetchChecked("/me/block/" + otherUserID, {
+    const { ok, data } = await apiFetchChecked("/chats/" + chatID + "/block", {
       method: "POST",
     });
     if (!ok) {
@@ -90,7 +77,7 @@ export default function ChatScreen() {
   }
 
   async function handleReport(reason: string) {
-    const { ok, data } = await apiFetchChecked("/me/report/" + otherUserID, {
+    const { ok, data } = await apiFetchChecked("/chats/" + chatID + "/report", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ reason, details: reportDetails }),
@@ -103,13 +90,7 @@ export default function ChatScreen() {
     setReportDetails("");
   }
   
-  async function loadMyID() {
-    const id = await SecureStore.getItemAsync("my_user_id");
-    setMyUserID(id || "");
-  }
-
   useEffect(() => {
-    loadMyID();
     fetchMessages();
     fetchCard();
   }, []);
@@ -121,10 +102,14 @@ export default function ChatScreen() {
           <ThemedText type="title">{chatName}</ThemedText>
         ) : (
           <>
-            <Link href={{ pathname: "/users/[userID]", params: { userID: otherUserID } }}>
+            {otherUserID ? (
+              <Link href={{ pathname: "/users/[userID]", params: { userID: otherUserID } }}>
+                <ThemedText type="title">{chatName}</ThemedText>
+              </Link>
+            ) : (
               <ThemedText type="title">{chatName}</ThemedText>
-            </Link>
-            <Link href={{ pathname: "/chats/[chatID]/card", params: { chatID: chatID as string } }}>
+            )}
+            <Link href={{ pathname: "/chats/[chatID]/card", params: { chatID: chatID as string } }}> 
               <ThemedText>Ver ficha</ThemedText>
             </Link>
             <TextInput
@@ -149,8 +134,8 @@ export default function ChatScreen() {
           renderItem={({ item }) => (
             <ThemedView
               style={{
-                alignSelf: item.sender_id === myUserID ? 'flex-end' : 'flex-start',
-                backgroundColor: item.sender_id === myUserID ? '#2b5278' : '#333',
+                alignSelf: item.is_mine ? 'flex-end' : 'flex-start',
+                backgroundColor: item.is_mine ? '#2b5278' : '#333',
                 padding: 8,
                 borderRadius: 8,
                 marginVertical: 4,

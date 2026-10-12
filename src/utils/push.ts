@@ -63,7 +63,6 @@ export async function openChatFromNotification(chatId: string) {
       params: {
         chatID: item.chat_id,
         nickname: item.nickname,
-        otherUserID: item.other_user_id,
         blocked: item.blocked ? '1' : '0',
       },
     });

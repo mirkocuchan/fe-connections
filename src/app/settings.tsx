@@ -12,15 +12,20 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function SettingsScreen() {
   const [globalDiscovery, setGlobalDiscovery] = useState(false);
+  const [pushMode, setPushMode] = useState<"off" | "name" | "full">("name");
 
   useFocusEffect(
     useCallback(() => {
-      async function loadSettings() {
-        const data = await apiFetch("/me");
-        if (data) setGlobalDiscovery(data.global_discovery);
-      }
-      loadSettings();
-    }, [])
+    async function loadSettings() {
+      const [me, push] = await Promise.all([
+        apiFetch("/me"),
+        apiFetch("/me/push-mode"),
+      ]);
+      if (me) setGlobalDiscovery(me.global_discovery);
+      if (push?.mode) setPushMode(push.mode);
+    }
+    loadSettings();
+  }, [])
   );
 
   async function handleToggleGlobal(value: boolean) {
@@ -52,7 +57,19 @@ export default function SettingsScreen() {
     await SecureStore.deleteItemAsync("my_user_id");
     router.replace("/login");
   }
-
+  
+  async function changePushMode(mode: "off" | "name" | "full") {
+    const { ok, data } = await apiFetchChecked("/me/push-mode", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode }),
+    });
+    if (!ok) {
+      Alert.alert("No se pudo guardar", data?.error || "Intentá de nuevo");
+      return;
+    }
+    setPushMode(mode);
+  }
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <ThemedView style={styles.container}>
@@ -68,6 +85,18 @@ export default function SettingsScreen() {
           </View>
           <Switch value={globalDiscovery} onValueChange={handleToggleGlobal} />
         </View>
+        <ThemedText type="subtitle">Notificaciones</ThemedText>
+          {[
+            { value: "off", label: "No recibir notificaciones" },
+            { value: "name", label: "Avisar sin mostrar el mensaje" },
+            { value: "full", label: "Mostrar el texto del mensaje" },
+          ].map((opt) => (
+            <Button
+              key={opt.value}
+              title={(pushMode === opt.value ? "✓ " : "") + opt.label}
+              onPress={() => changePushMode(opt.value as "off" | "name" | "full")}
+            />
+          ))}
         <Pressable style={styles.row} onPress={() => router.push("/blocked-users")}>
           <ThemedText style={{ flex: 1 }}>Usuarios bloqueados</ThemedText>
           <ThemedText>›</ThemedText>

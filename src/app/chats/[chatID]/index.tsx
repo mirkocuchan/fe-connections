@@ -3,7 +3,7 @@ import { ThemedView } from '@/components/themed-view';
 import { apiFetch, apiFetchChecked } from '@/utils/api';
 import { Link, router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, Button, FlatList, StyleSheet, TextInput } from 'react-native';
+import { Alert, Button, FlatList, Image, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 
@@ -142,6 +142,23 @@ export default function ChatScreen() {
                 maxWidth: '80%',
               }}
             >
+              {item.is_story_reply && (
+                <>
+                  <ThemedText style={{ fontSize: 12, opacity: 0.6 }}>
+                    {item.is_mine ? "Respondiste a una historia" : "Respondió a tu historia"}
+                  </ThemedText>
+                  {item.story_media_url && item.story_media_type === "image" ? (
+                    <Image
+                      source={{ uri: item.story_media_url }}
+                      style={{ width: 80, height: 120, borderRadius: 6, marginVertical: 4 }}
+                    />
+                  ) : (
+                    <ThemedText style={{ fontSize: 12, opacity: 0.6 }}>
+                      {item.story_media_url ? "🎬 Historia en video" : "Historia expirada"}
+                    </ThemedText>
+                  )}
+                </>
+              )}
               <ThemedText>{item.content}</ThemedText>
             </ThemedView>
           )}

@@ -7,7 +7,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { useFocusEffect } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Button, FlatList, Image, Modal, Pressable, StyleSheet } from 'react-native';
+import { ActivityIndicator, Alert, Button, FlatList, Image, Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 
@@ -51,6 +51,11 @@ export default function StoriesScreen() {
   const [viewers, setViewers] = useState<any[]>([]);
   const [showViewers, setShowViewers] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
+  const [replyText, setReplyText] = useState("");
+  const [replyFocused, setReplyFocused] = useState(false);
+  const [sendingReply, setSendingReply] = useState(false);
+  const [replySent, setReplySent] = useState(false);
+  const replying = replyFocused || replyText.length > 0;
 
   async function fetchStories() {
     const data = await apiFetch("/stories");
@@ -85,24 +90,6 @@ export default function StoriesScreen() {
     }
     setOpenGroup(null);
     fetchStories();
-  }
-
-  function handleOpenGroup(group: any[]) {
-    setOpenGroup(group);
-    setCurrentIndex(0);
-    markAsViewed(group[0]);
-  }
-
-  function handleNextStory() {
-    if (!openGroup) return;
-    if (currentIndex + 1 < openGroup.length) {
-      const nextIndex = currentIndex + 1;
-      setCurrentIndex(nextIndex);
-      markAsViewed(openGroup[nextIndex]);
-    } else {
-      setOpenGroup(null);
-      fetchStories();
-    }
   }
   
   async function uploadAndCreateStory(imageUri: string) {
@@ -146,14 +133,14 @@ export default function StoriesScreen() {
     setShowViewers(true);
   }
   useEffect(() => {
-    if (!openGroup || showViewers) return;
+    if (!openGroup || showViewers || replying) return;
 
     const timer = setTimeout(() => {
       handleNextStory();
     }, 5000);
 
     return () => clearTimeout(timer);
-  }, [openGroup, currentIndex, showViewers]);
+  }, [openGroup, currentIndex, showViewers, replying]);
 
   const groupedStories = groupStoriesByUser(stories);
   function handleStoryOptions() {
@@ -167,7 +154,30 @@ export default function StoriesScreen() {
       ]
     );
   }
+  async function handleSendReply() {
+    if (!openGroup || sendingReply) return;
+    const content = replyText.trim();
+    if (!content) return;
+    const story = openGroup[currentIndex];
 
+    setSendingReply(true);
+    const { ok, data } = await apiFetchChecked("/stories/" + story.story_id + "/reply", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content }),
+    });
+    setSendingReply(false);
+
+    if (!ok) {
+      Alert.alert("No se pudo enviar", data?.error || "Intentá de nuevo");
+      return;
+    }
+    setReplyText("");
+    Keyboard.dismiss();
+    setReplySent(true);
+    setTimeout(() => setReplySent(false), 2000);
+  }
+  
   function confirmDeleteStory() {
     Alert.alert(
       "Confirmar",
@@ -177,6 +187,25 @@ export default function StoriesScreen() {
         { text: "No", style: "cancel" },
       ]
     );
+  }
+  function handleOpenGroup(group: any[]) {
+    setOpenGroup(group);
+    setCurrentIndex(0);
+    setReplyText("");
+    markAsViewed(group[0]);
+  }
+
+  function handleNextStory() {
+    if (!openGroup) return;
+    if (currentIndex + 1 < openGroup.length) {
+      const nextIndex = currentIndex + 1;
+      setCurrentIndex(nextIndex);
+      setReplyText("");
+      markAsViewed(openGroup[nextIndex]);
+    } else {
+      setOpenGroup(null);
+      fetchStories();
+    }
   }
 
   return (
@@ -220,7 +249,7 @@ export default function StoriesScreen() {
         <Modal visible={!!openGroup} transparent={true} onRequestClose={() => setOpenGroup(null)}>
           <Pressable
             style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', justifyContent: 'center', alignItems: 'center' }}
-            onPress={() => (showViewers ? setShowViewers(false) : handleNextStory())}
+            onPress={() => {if (showViewers) setShowViewers(false); else if (replyFocused) Keyboard.dismiss(); else handleNextStory();}}
           >
             {openGroup && (
               <>
@@ -258,6 +287,41 @@ export default function StoriesScreen() {
                     <ThemedText style={{ fontSize: 24, color: 'white' }}>⋮</ThemedText>
                   </Pressable>
                 )}
+                  {openGroup[currentIndex].user_id !== myUserID && (
+                    <KeyboardAvoidingView
+                      behavior={Platform.OS === "ios" ? "padding" : undefined}
+                      style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }}
+                    >
+                      <Pressable
+                        onPress={() => {}}
+                        style={{ flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, paddingBottom: 28 }}
+                      >
+                        <TextInput
+                          value={replyText}
+                          onChangeText={setReplyText}
+                          onFocus={() => setReplyFocused(true)}
+                          onBlur={() => setReplyFocused(false)}
+                          placeholder="Responder..."
+                          placeholderTextColor="#aaa"
+                          returnKeyType="send"
+                          onSubmitEditing={handleSendReply}
+                          style={{
+                            flex: 1, color: '#fff', borderWidth: 1, borderColor: '#777',
+                            borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8,
+                          }}
+                        />
+                        {replySent ? (
+                          <ThemedText style={{ color: 'white' }}>Enviado ✓</ThemedText>
+                        ) : (
+                          <Button
+                            title="Enviar"
+                            onPress={handleSendReply}
+                            disabled={sendingReply || !replyText.trim()}
+                          />
+                        )}
+                      </Pressable>
+                    </KeyboardAvoidingView>
+                  )}
                 {showViewers && (
                   <Pressable
                     onPress={() => {}}

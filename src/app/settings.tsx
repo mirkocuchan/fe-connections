@@ -3,6 +3,7 @@ import { ThemedView } from '@/components/themed-view';
 import { API_BASE_URL } from '@/constants/api';
 import { apiFetch, apiFetchChecked } from '@/utils/api';
 import { unregisterPush } from '@/utils/push';
+import { disconnectSocket } from '@/utils/socket';
 import { router, useFocusEffect } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { useCallback, useState } from 'react';
@@ -52,6 +53,7 @@ export default function SettingsScreen() {
     } catch (error) {
 
     }
+    disconnectSocket();   //cortar la línea antes de borrar la sesión
     await SecureStore.deleteItemAsync("token");
     await SecureStore.deleteItemAsync("refresh_token");
     await SecureStore.deleteItemAsync("my_user_id");

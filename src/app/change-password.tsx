@@ -1,6 +1,7 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { apiFetchChecked } from '@/utils/api';
+import { disconnectSocket } from '@/utils/socket';
 import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { useState } from 'react';
@@ -46,7 +47,7 @@ export default function ChangePasswordScreen() {
       );
       return;
     }
-
+    disconnectSocket(); 
     // el servidor cerró todas las sesiones: limpio la mía y vuelvo al login
     await SecureStore.deleteItemAsync("token");
     await SecureStore.deleteItemAsync("refresh_token");

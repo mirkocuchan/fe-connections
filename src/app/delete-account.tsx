@@ -1,6 +1,7 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { apiFetchChecked } from '@/utils/api';
+import { disconnectSocket } from '@/utils/socket';
 import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { useState } from 'react';
@@ -43,6 +44,7 @@ export default function DeleteAccountScreen() {
       );
       return;
     }
+    disconnectSocket(); 
     await SecureStore.deleteItemAsync("token");
     await SecureStore.deleteItemAsync("refresh_token");
     await SecureStore.deleteItemAsync("my_user_id");

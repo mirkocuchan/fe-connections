@@ -7,18 +7,24 @@ import { useColorScheme } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import { openChatFromNotification, registerForPush } from '@/utils/push';
+import { getActiveChat, openChatFromNotification, registerForPush } from '@/utils/push';
+import { connectSocket } from '@/utils/socket';
 
 SplashScreen.preventAutoHideAsync();
 
 Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: false,
-    shouldSetBadge: false,
-  }),
+  handleNotification: async (notification) => {
+    const chatId = notification.request.content.data?.chat_id;
+    const sameChat = typeof chatId === 'string' && chatId === getActiveChat();
+    return {
+      shouldShowBanner: !sameChat,
+      shouldShowList: !sameChat,
+      shouldPlaySound: false,
+      shouldSetBadge: false,
+    };
+  },
 });
+//mostrar, salvo que sea del chat que tengo abierto
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -31,13 +37,16 @@ export default function RootLayout() {
     async function checkToken() {
       const storedToken = await SecureStore.getItemAsync("token");
       setToken(storedToken);
-      if (storedToken) registerForPush();
+      if (storedToken) {
+        registerForPush();
+        connectSocket();
+      }
       setIsLoading(false);
     }
     checkToken();
   }, []);
 
-  //Cuando el usuario toca una notificación (app abierta, en segundo plano o cerrada)
+  //cuando el usuario toca una notificación (app abierta, en segundo plano o cerrada)
   useEffect(() => {
     if (isLoading || !lastResponse) return;
     if (lastResponse.actionIdentifier !== Notifications.DEFAULT_ACTION_IDENTIFIER) return;

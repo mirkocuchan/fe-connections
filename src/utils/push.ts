@@ -70,3 +70,12 @@ export async function openChatFromNotification(chatId: string) {
     console.log('push: open chat failed', e);
   }
 }
+
+//qué chat está abierto ahora (para no mostrar banner de ese mismo chat)
+let activeChatID: string | null = null;
+export function setActiveChat(id: string | null) {
+  activeChatID = id;
+}
+export function getActiveChat() {
+  return activeChatID;
+}

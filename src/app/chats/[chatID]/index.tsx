@@ -1,8 +1,10 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { apiFetch, apiFetchChecked } from '@/utils/api';
-import { Link, router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { setActiveChat } from '@/utils/push';
+import { onSocketEvent } from '@/utils/socket';
+import { Link, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
 import { Alert, Button, FlatList, Image, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -94,6 +96,27 @@ export default function ChatScreen() {
     fetchMessages();
     fetchCard();
   }, []);
+
+  // marcar este chat como abierto sólo mientras la pantalla tiene el foco
+  useFocusEffect(
+    useCallback(() => {
+      setActiveChat(chatID as string);
+      return () => setActiveChat(null);
+    }, [chatID])
+  );  //por que no un useEffect? las pantallas quedan montadas en el stack, useEffect no avisaría cuando salís del chat.
+
+  //mensajes en vivo
+  useEffect(() => {
+    return onSocketEvent((ev) => {
+      if (ev.type === "resync") {
+        fetchMessages();
+      } else if (ev.type === "new_message" && ev.chat_id === chatID) {
+        setMessages((prev) =>
+          prev.some((m) => m.message_id === ev.message.message_id) ? prev : [...prev, ev.message]
+        );
+      }
+    });
+  }, [chatID]); //al abrir la pantalla te anota, y al cerrarla te borra, porque lo que devuelve es justamente la función que borra
 
   return (
     <SafeAreaView style={{ flex: 1 }}>

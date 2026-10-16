@@ -4,7 +4,7 @@ import { apiFetch, apiFetchChecked } from '@/utils/api';
 import { setActiveChat } from '@/utils/push';
 import { onSocketEvent } from '@/utils/socket';
 import { Link, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Button, FlatList, Image, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -20,6 +20,7 @@ export default function ChatScreen() {
   const [nicknameInput, setNicknameInput] = useState("");
   const [reportDetails, setReportDetails] = useState("");
   const [isInitiator, setIsInitiator] = useState(false);
+  const listRef = useRef<FlatList>(null);
 
   async function fetchMessages() {
     const data = await apiFetch("/chats/" + chatID + "/messages");
@@ -152,6 +153,8 @@ export default function ChatScreen() {
           </ThemedText>
         )}
         <FlatList
+          ref={listRef}
+          onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
           data={messages}
           keyExtractor={(item) => item.message_id}
           renderItem={({ item }) => (

@@ -1,13 +1,14 @@
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { API_BASE_URL } from "@/constants/api";
+import { formStyles } from "@/constants/form-styles";
 import { registerForPush } from "@/utils/push";
 import { connectSocket } from "@/utils/socket";
 import { getLocales } from "expo-localization";
 import { Link, router } from 'expo-router';
 import * as SecureStore from "expo-secure-store";
 import { useState } from "react";
-import { Button, StyleSheet, TextInput } from "react-native";
+import { Pressable, StyleSheet, TextInput } from "react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function LoginScreen() {
@@ -37,50 +38,49 @@ export default function LoginScreen() {
       registerForPush(); //sin await: no frena el login
       connectSocket();   //abrir la línea recién logueado
       router.replace("/(tabs)");
-      
-      router.replace("/(tabs)");
     } catch (error) {
       setErrorMessage("No se pudo conectar con el servidor");
     }
   }
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
-      <ThemedView style={styles.container}>
-        <TextInput
-          value={email}
-          onChangeText={setEmail}
-          placeholder="Email"
-          keyboardType="email-address"
-          autoCapitalize="none"
-          style={{ color: '#ffffff', borderWidth: 1, borderColor: '#ccc', padding: 8 }}
-        />
-        <TextInput
-          value={password}
-          onChangeText={setPassword}
-          placeholder="Contraseña"
-          secureTextEntry
-          style={{ color: '#ffffff', borderWidth: 1, borderColor: '#ccc', padding: 8 }}
-        />
-        <Button title="Log in" onPress={handleLogin} />
-        <Link href="/register">
-          <ThemedText>¿No tenés cuenta? Registrate</ThemedText>
-        </Link>
-        {errorMessage ? (
-          <ThemedText style={{ color: 'red' }}>{errorMessage}</ThemedText>
-        ) : null}
-      </ThemedView>
-    </SafeAreaView>
+  <SafeAreaView style={{ flex: 1 }}>
+    <ThemedView style={formStyles.container}>
+      <TextInput
+        value={email}
+        onChangeText={setEmail}
+        placeholder="Email"
+        keyboardType="email-address"
+        autoCapitalize="none"
+        style={formStyles.input}
+        placeholderTextColor="#888"
+      />
+      <TextInput
+        value={password}
+        onChangeText={setPassword}
+        placeholder="Contraseña"
+        secureTextEntry
+        style={formStyles.input}
+        placeholderTextColor="#888"
+      />
+      <Pressable onPress={handleLogin} style={formStyles.button}>
+        <ThemedText style={formStyles.buttonText}>Iniciar sesión</ThemedText>
+      </Pressable>
+      <Link href="/register" style={styles.linkRow}>
+        <ThemedText type="linkPrimary" style={formStyles.linkText}>
+          ¿No tenés cuenta? Registrate
+        </ThemedText>
+      </Link>
+      {errorMessage ? (
+        <ThemedText style={formStyles.error}>{errorMessage}</ThemedText>
+      ) : null}
+    </ThemedView>
+  </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  title: {
-    textAlign: 'center',
+  linkRow: {
+    textAlign: "center",
   },
 });

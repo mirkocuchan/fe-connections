@@ -1,8 +1,9 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { apiFetch, apiFetchChecked } from '@/utils/api';
+import { onSocketEvent } from '@/utils/socket';
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, FlatList, Image, Modal, Pressable, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -12,20 +13,44 @@ export default function ChatsScreen() {
   const [zoomedPhoto, setZoomedPhoto] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
+  const fetchChats = useCallback(async () => {
+    const data = await apiFetch("/chats");
+    if (data) setChats(data);
+  }, []);
+
+  //siempre tenemos a mano la lista actual para consultarla dentro del handler del socket
+  const chatsRef = useRef<any[]>([]);
+  chatsRef.current = chats;
+
   useFocusEffect(
     useCallback(() => {
-      async function fetchChats() {
-        const data = await apiFetch("/chats");
-        if (data) setChats(data);
-      }
       fetchChats();
-    }, [])
+    }, [fetchChats])
   );
+
+  useEffect(() => {
+    return onSocketEvent((ev) => {
+      if (ev.type === "resync") {
+        fetchChats();
+      } else if (ev.type === "new_message") {
+        const known = chatsRef.current.some((c) => c.chat_id === ev.chat_id);
+        if (!known) {
+          fetchChats(); //chat nuevo: lo pedimos al servidor, que calcula el nombre anónimo
+          return;
+        }
+        setChats((prev) => {
+          const idx = prev.findIndex((c) => c.chat_id === ev.chat_id);
+          if (idx === -1) return prev;
+          const updated = { ...prev[idx], last_message: ev.message.content };
+          return [updated, ...prev.slice(0, idx), ...prev.slice(idx + 1)];
+        });
+      }
+    });
+  }, [fetchChats]);
 
   async function handleRefresh() {
     setRefreshing(true);
-    const data = await apiFetch("/chats");
-    if (data) setChats(data);
+    await fetchChats();
     setRefreshing(false);
   }
 
@@ -35,8 +60,7 @@ export default function ChatsScreen() {
       Alert.alert("No se pudo borrar", data?.error || "Intentá de nuevo");
       return;
     }
-    const chatsData = await apiFetch("/chats");
-    if (chatsData) setChats(chatsData);
+    await fetchChats();
   }
 
   async function handleBlockUser(chatID: string) {
@@ -45,8 +69,7 @@ export default function ChatsScreen() {
       Alert.alert("No se pudo bloquear", data?.error || "Intentá de nuevo");
       return;
     }
-    const chatsData = await apiFetch("/chats");
-    if (chatsData) setChats(chatsData);
+    await fetchChats();
   }
 
   async function handleUnblockUser(chatID: string) {
@@ -55,8 +78,7 @@ export default function ChatsScreen() {
       Alert.alert("No se pudo desbloquear", data?.error || "Intentá de nuevo");
       return;
     }
-    const chatsData = await apiFetch("/chats");
-    if (chatsData) setChats(chatsData);
+    await fetchChats();
   }
 
   function openChat(item: any) {

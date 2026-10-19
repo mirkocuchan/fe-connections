@@ -4,8 +4,8 @@ import { apiFetch, apiFetchChecked } from '@/utils/api';
 import { setActiveChat } from '@/utils/push';
 import { onSocketEvent } from '@/utils/socket';
 import { Link, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Button, FlatList, Image, StyleSheet, TextInput } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Button, FlatList, Image, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 
@@ -20,11 +20,42 @@ export default function ChatScreen() {
   const [nicknameInput, setNicknameInput] = useState("");
   const [reportDetails, setReportDetails] = useState("");
   const [isInitiator, setIsInitiator] = useState(false);
-  const listRef = useRef<FlatList>(null);
+  const PAGE_SIZE = 30;
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const loadingOlderRef = useRef(false);
+
+  //la lista invertida necesita el más nuevo primero, nuestro estado está en orden cronológico
+  const invertedMessages = useMemo(() => [...messages].reverse(), [messages]);
 
   async function fetchMessages() {
-    const data = await apiFetch("/chats/" + chatID + "/messages");
-    if (data) setMessages(data);
+    const data = await apiFetch("/chats/" + chatID + "/messages?limit=" + PAGE_SIZE);
+    if (data) {
+      setMessages(data);
+      setHasMore(data.length === PAGE_SIZE); //nada mas antiguo si tengo menos de 30
+    }
+  }
+
+  async function loadOlder() {
+    if (loadingOlderRef.current || !hasMore || messages.length === 0) return;
+    loadingOlderRef.current = true; //candado para que no se pida dos veces
+    setLoadingOlder(true);
+    try {
+      const oldest = messages[0].message_id; //el estado está en orden cronológico: [0] es el más viejo y [100] el mas nuevo
+      const data = await apiFetch(
+        "/chats/" + chatID + "/messages?limit=" + PAGE_SIZE + "&before=" + oldest
+      );
+      if (data) {
+        setMessages((prev) => {
+          const known = new Set(prev.map((m) => m.message_id));
+          return [...data.filter((m: any) => !known.has(m.message_id)), ...prev];
+        });
+        setHasMore(data.length === PAGE_SIZE);
+      }
+    } finally {
+      loadingOlderRef.current = false;
+      setLoadingOlder(false);
+    }
   }
 
   async function handleSendMessage() {
@@ -38,7 +69,13 @@ export default function ChatScreen() {
       return;
     }
     setContent("");
-    fetchMessages();
+    if (data?.message_id) {
+      setMessages((prev) =>
+        prev.some((m) => m.message_id === data.message_id) ? prev : [...prev, data]
+      );
+    } else {
+      fetchMessages();
+    }
   }
 
   async function fetchCard() {
@@ -92,7 +129,10 @@ export default function ChatScreen() {
     Alert.alert("Reportado", "Gracias, vamos a revisarlo.");
     setReportDetails("");
   }
-  
+  function markRead() {
+    apiFetchChecked("/chats/" + chatID + "/read", { method: "POST" });
+  }
+
   useEffect(() => {
     fetchMessages();
     fetchCard();
@@ -102,6 +142,7 @@ export default function ChatScreen() {
   useFocusEffect(
     useCallback(() => {
       setActiveChat(chatID as string);
+      markRead();
       return () => setActiveChat(null);
     }, [chatID])
   );  //por que no un useEffect? las pantallas quedan montadas en el stack, useEffect no avisaría cuando salís del chat.
@@ -115,6 +156,7 @@ export default function ChatScreen() {
         setMessages((prev) =>
           prev.some((m) => m.message_id === ev.message.message_id) ? prev : [...prev, ev.message]
         );
+        markRead();
       }
     });
   }, [chatID]); //al abrir la pantalla te anota, y al cerrarla te borra, porque lo que devuelve es justamente la función que borra
@@ -153,10 +195,12 @@ export default function ChatScreen() {
           </ThemedText>
         )}
         <FlatList
-          ref={listRef}
-          onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
-          data={messages}
+          inverted
+          data={invertedMessages}
           keyExtractor={(item) => item.message_id}
+          onEndReached={loadOlder}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={loadingOlder ? <ActivityIndicator style={{ margin: 12 }} /> : null}
           renderItem={({ item }) => (
             <ThemedView
               style={{
@@ -189,7 +233,9 @@ export default function ChatScreen() {
             </ThemedView>
           )}
           ListEmptyComponent={
-            <ThemedText>Todavía no hay mensajes. ¡Escribí el primero!</ThemedText>
+            <ThemedView style={{ transform: [{ scaleY: -1 }] }}>
+              <ThemedText>Todavía no hay mensajes. ¡Escribí el primero!</ThemedText>
+            </ThemedView>
           }
         />
         {!readOnly && (

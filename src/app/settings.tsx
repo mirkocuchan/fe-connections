@@ -4,6 +4,7 @@ import { API_BASE_URL } from '@/constants/api';
 import { apiFetch, apiFetchChecked } from '@/utils/api';
 import { unregisterPush } from '@/utils/push';
 import { disconnectSocket } from '@/utils/socket';
+import { setUnreadTotal } from '@/utils/unread';
 import { router, useFocusEffect } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { useCallback, useState } from 'react';
@@ -54,6 +55,7 @@ export default function SettingsScreen() {
 
     }
     disconnectSocket();   //cortar la línea antes de borrar la sesión
+    setUnreadTotal(0);   //borra la pizarra de la cuenta anterior con los chats sin leer
     await SecureStore.deleteItemAsync("token");
     await SecureStore.deleteItemAsync("refresh_token");
     await SecureStore.deleteItemAsync("my_user_id");

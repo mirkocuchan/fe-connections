@@ -2,6 +2,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { apiFetchChecked } from '@/utils/api';
 import { disconnectSocket } from '@/utils/socket';
+import { setUnreadTotal } from '@/utils/unread';
 import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { useState } from 'react';
@@ -49,6 +50,7 @@ export default function ChangePasswordScreen() {
     }
     disconnectSocket(); 
     // el servidor cerró todas las sesiones: limpio la mía y vuelvo al login
+    setUnreadTotal(0);   //borra la pizarra de la cuenta anterior con la cantidad de chats sin leer
     await SecureStore.deleteItemAsync("token");
     await SecureStore.deleteItemAsync("refresh_token");
     await SecureStore.deleteItemAsync("my_user_id");

@@ -1,7 +1,9 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { apiFetch, apiFetchChecked } from '@/utils/api';
+import { getActiveChat } from '@/utils/push';
 import { onSocketEvent } from '@/utils/socket';
+import { setUnreadTotal } from '@/utils/unread';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, FlatList, Image, Modal, Pressable, StyleSheet, TextInput } from 'react-native';
@@ -38,15 +40,24 @@ export default function ChatsScreen() {
           fetchChats(); //chat nuevo: lo pedimos al servidor, que calcula el nombre anónimo
           return;
         }
+        const isOpen = getActiveChat() === ev.chat_id;
         setChats((prev) => {
           const idx = prev.findIndex((c) => c.chat_id === ev.chat_id);
           if (idx === -1) return prev;
-          const updated = { ...prev[idx], last_message: ev.message.content };
+          const updated = {
+            ...prev[idx],
+            last_message: ev.message.content,
+            unread_count: isOpen ? 0 : (prev[idx].unread_count ?? 0) + 1,
+          };
           return [updated, ...prev.slice(0, idx), ...prev.slice(idx + 1)];
         });
       }
     });
   }, [fetchChats]);
+  
+  useEffect(() => {
+    setUnreadTotal(chats.filter((c) => c.unread_count > 0).length);
+  }, [chats]);
 
   async function handleRefresh() {
     setRefreshing(true);
@@ -112,7 +123,7 @@ export default function ChatsScreen() {
   );
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView style={{ flex: 1 }} edges={['left', 'right', 'bottom']}>
       <ThemedView style={styles.container}>
         <TextInput
           value={searchQuery}
@@ -138,10 +149,19 @@ export default function ChatsScreen() {
                   />
                 </Pressable>
                 <ThemedView>
-                  <ThemedText>{item.nickname}</ThemedText>
+                  <ThemedText style={item.unread_count > 0 ? { fontWeight: '700' } : undefined}>
+                    {item.nickname}
+                  </ThemedText>
                   {item.blocked && <ThemedText>Bloqueado</ThemedText>}
                   <ThemedText>{item.last_message}</ThemedText>
                 </ThemedView>
+                {item.unread_count > 0 && (
+                  <ThemedView style={styles.badge}>
+                    <ThemedText style={styles.badgeText}>
+                      {item.unread_count > 99 ? "99+" : item.unread_count}
+                    </ThemedText>
+                  </ThemedView>
+                )}
               </ThemedView>
             </Pressable>
           )}
@@ -173,7 +193,20 @@ export default function ChatsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
+  },
+  badge: {
+    backgroundColor: '#3c87f7',
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
+    paddingHorizontal: 6,
     alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 16,
   },
 });

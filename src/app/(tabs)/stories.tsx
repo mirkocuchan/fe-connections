@@ -209,7 +209,7 @@ export default function StoriesScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView style={{ flex: 1 }} edges={['left', 'right', 'bottom']}>
       <ThemedView style={styles.container}>
         <Button title="📷 Publicar historia" onPress={() => chooseImageSource(uploadAndCreateStory)} />
 

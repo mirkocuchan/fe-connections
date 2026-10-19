@@ -66,6 +66,11 @@ export default function LoginScreen() {
       <Pressable onPress={handleLogin} style={formStyles.button}>
         <ThemedText style={formStyles.buttonText}>Iniciar sesión</ThemedText>
       </Pressable>
+      <Link href="/forgot-password" style={styles.linkRow}>
+        <ThemedText type="linkPrimary" style={formStyles.linkText}>
+          ¿Olvidaste tu contraseña?
+        </ThemedText>
+      </Link>
       <Link href="/register" style={styles.linkRow}>
         <ThemedText type="linkPrimary" style={formStyles.linkText}>
           ¿No tenés cuenta? Registrate

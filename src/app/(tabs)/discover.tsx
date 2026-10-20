@@ -3,7 +3,7 @@ import { ThemedView } from '@/components/themed-view';
 import { apiFetch } from '@/utils/api';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Button, FlatList, Image, Modal, Pressable, StyleSheet, TextInput } from 'react-native';
+import { FlatList, Image, Modal, Pressable, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function DiscoverScreen() {
@@ -53,37 +53,55 @@ export default function DiscoverScreen() {
   return (
     <SafeAreaView style={{ flex: 1 }} edges={['left', 'right', 'bottom']}>
       <ThemedView style={styles.container}>
-        <TextInput
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          placeholder="Buscar..."
-          style={{ color: '#ffffff', borderWidth: 1, borderColor: '#555555', padding: 8 }}
-        />
-        <Button title="🔀 Reshuffle" onPress={fetchDiscoverUsers} />
+        <ThemedView style={styles.topBar}>
+          <TextInput
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder="Buscar por nombre..."
+            placeholderTextColor="#888"
+            autoCapitalize="none"
+            autoCorrect={false}
+            style={styles.search}
+          />
+          {!isSearching && (
+            <Pressable style={styles.shuffle} onPress={fetchDiscoverUsers}>
+              <ThemedText style={styles.shuffleText}>🔀 Mezclar</ThemedText>
+            </Pressable>
+          )}
+        </ThemedView>
+
         <FlatList
           data={listData}
           keyExtractor={(item) => item.user_id}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: 16 }}
           renderItem={({ item }) => (
-            <Pressable onPress={() => handlePressUser(item)}>
-              <ThemedView style={{ flexDirection: 'row', alignItems: 'center', padding: 8, gap: 8 }}>
-                <Pressable onPress={() => setZoomedPhoto(item.photo_url)}>
-                  <Image
-                    source={item.photo_url ? { uri: item.photo_url } : require('@/assets/images/icon.png')}
-                    style={{ width: 50, height: 50, borderRadius: 25 }}
-                  />
-                </Pressable>
-                <ThemedText>{item.display_name ?? item.username}</ThemedText>
-              </ThemedView>
+            <Pressable style={styles.row} onPress={() => handlePressUser(item)}>
+              <Pressable onPress={() => setZoomedPhoto(item.photo_url)} hitSlop={6}>
+                {item.photo_url ? (
+                  <Image source={{ uri: item.photo_url }} style={styles.avatar} />
+                ) : (
+                  <ThemedView style={[styles.avatar, styles.avatarEmpty]}>
+                    <ThemedText style={styles.avatarLetter}>
+                      {(item.display_name ?? item.username ?? "?").charAt(0).toUpperCase()}
+                    </ThemedText>
+                  </ThemedView>
+                )}
+              </Pressable>
+              <ThemedText style={styles.name} numberOfLines={1}>
+                {item.display_name ?? item.username}
+              </ThemedText>
             </Pressable>
           )}
           ListEmptyComponent={
-            <ThemedText>
-              {searchQuery
+            <ThemedText style={styles.empty}>
+              {isSearching
                 ? "No se encontraron resultados."
                 : "No hay nadie para descubrir todavía."}
             </ThemedText>
           }
         />
+
         <Modal visible={!!zoomedPhoto} transparent={true} onRequestClose={() => setZoomedPhoto(null)}>
           <Pressable
             style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.9)', justifyContent: 'center', alignItems: 'center' }}
@@ -102,9 +120,42 @@ export default function DiscoverScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
+  container: { flex: 1 },
+  topBar: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
+  search: {
+    flex: 1,
+    color: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#555',
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontSize: 16,
+  },
+  shuffle: {
+    backgroundColor: '#3c87f7',
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  shuffleText: { color: '#fff', fontSize: 14, fontWeight: '600' },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#333',
+  },
+  avatar: { width: 50, height: 50, borderRadius: 25 },
+  name: { flex: 1, fontSize: 17 },
+  empty: { textAlign: 'center', marginTop: 32, opacity: 0.7 },
+  avatarEmpty: { backgroundColor: '#444', alignItems: 'center', justifyContent: 'center' },
+  avatarLetter: { fontSize: 22, fontWeight: '600', color: '#fff' },
 });

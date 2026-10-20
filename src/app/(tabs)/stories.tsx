@@ -7,7 +7,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { useFocusEffect } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Button, FlatList, Image, Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, TextInput } from 'react-native';
+import { ActivityIndicator, Alert, Button, Dimensions, FlatList, Image, Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 
@@ -42,6 +42,12 @@ function timeAgo(dateString: string) {
   if (diffHours === 1) return "hace 1 hora";
   return `hace ${diffHours} horas`;
 }
+
+//para ver las historias de manera distinta, rectangular
+const COLUMNS = 3;
+const GAP = 8;
+const TILE_WIDTH = (Dimensions.get("window").width - GAP * (COLUMNS + 1)) / COLUMNS;
+const TILE_HEIGHT = TILE_WIDTH * 1.4; // vertical, como una historia
 
 export default function StoriesScreen() {
   const [stories, setStories] = useState<any[]>([]);
@@ -211,38 +217,47 @@ export default function StoriesScreen() {
   return (
     <SafeAreaView style={{ flex: 1 }} edges={['left', 'right', 'bottom']}>
       <ThemedView style={styles.container}>
-        <Button title="📷 Publicar historia" onPress={() => chooseImageSource(uploadAndCreateStory)} />
+        <Pressable
+          style={styles.publishButton}
+          onPress={() => chooseImageSource(uploadAndCreateStory)}
+        >
+          <ThemedText style={styles.publishText}>📷 Publicar historia</ThemedText>
+        </Pressable>
 
         <FlatList
           data={groupedStories}
           keyExtractor={(group) => group[0].user_id}
-          horizontal
-          style={{ maxHeight: 100 }}
-          showsHorizontalScrollIndicator={false}
+          numColumns={COLUMNS}
+          contentContainerStyle={{ padding: GAP, gap: GAP }}
+          columnWrapperStyle={{ gap: GAP }}
           renderItem={({ item: group }) => {
             const cover = group[0];
             const hasUnviewed = group.some((s: any) => !s.viewed_at);
             return (
               <Pressable
                 onPress={() => handleOpenGroup(group)}
-                style={{ alignItems: 'center', justifyContent: 'flex-start', marginHorizontal: 6, width: 70, height: 90 }}
-              >
-                <Image
-                  source={{ uri: cover.media_url }}
-                  style={{
-                    width: 60,
-                    height: 60,
-                    borderRadius: 30,
+                style={[
+                  styles.tile,
+                  {
                     borderWidth: hasUnviewed ? 3 : 1,
                     borderColor: hasUnviewed ? '#ff5c5c' : '#555',
-                  }}
-                />
-                <ThemedText style={{ fontSize: 10 }}>{cover.username}</ThemedText>
+                  },
+                ]}
+              >
+                <Image source={{ uri: cover.media_url }} style={StyleSheet.absoluteFill} />
+                {group.length > 1 && (
+                  <ThemedText style={styles.count}>{group.length}</ThemedText>
+                )}
+                <ThemedText style={styles.tileName} numberOfLines={1}>
+                  {cover.user_id === myUserID ? "Tu historia" : cover.username}
+                </ThemedText>
               </Pressable>
             );
           }}
           ListEmptyComponent={
-            <ThemedText>No hay historias activas todavía.</ThemedText>
+            <ThemedText style={{ textAlign: 'center', marginTop: 24 }}>
+              No hay historias activas todavía.
+            </ThemedText>
           }
         />
 
@@ -355,4 +370,42 @@ export default function StoriesScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  publishButton: {
+    backgroundColor: '#3c87f7',
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginHorizontal: 8,
+    marginTop: 8,
+  },
+  publishText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  tile: {
+    width: TILE_WIDTH,
+    height: TILE_HEIGHT,
+    borderRadius: 12,
+    overflow: 'hidden',   // para que la imagen respete las esquinas redondeadas
+    backgroundColor: '#222',
+    justifyContent: 'flex-end',
+  },
+  tileName: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  count: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '700',
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
 });

@@ -1,9 +1,10 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { apiFetchChecked } from '@/utils/api';
+import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Button, StyleSheet, TextInput } from 'react-native';
+import { Alert, KeyboardAvoidingView, Pressable, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function NewChatScreen() {
@@ -35,23 +36,87 @@ export default function NewChatScreen() {
     });
   }
 
+  const canSend = content.trim() !== "" && !sending;
+
   return (
     <SafeAreaView style={{ flex: 1 }}>
-      <ThemedView style={styles.container}>
-        <ThemedText type="title">{name}</ThemedText>
-        <ThemedText>Todavía no hay mensajes. ¡Escribí el primero!</ThemedText>
-        <TextInput
-          value={content}
-          onChangeText={setContent}
-          placeholder="Escribí un mensaje..."
-          style={{ color: '#ffffff', borderWidth: 1, borderColor: '#555555', padding: 8 }}
-        />
-        <Button title="Enviar" onPress={handleSend} disabled={sending} />
-      </ThemedView>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
+        <ThemedView style={styles.header}>
+          <Pressable onPress={() => router.back()} hitSlop={12}>
+            <Ionicons name="chevron-back" size={26} color="#ffffff" />
+          </Pressable>
+          <ThemedText style={styles.headerTitle} numberOfLines={1}>
+            {name}
+          </ThemedText>
+        </ThemedView>
+
+        <ThemedView style={styles.body}>
+          <ThemedText style={styles.hint}>
+            Todavía no hay mensajes. ¡Escribí el primero!
+          </ThemedText>
+        </ThemedView>
+
+        <ThemedView style={styles.inputBar}>
+          <TextInput
+            value={content}
+            onChangeText={setContent}
+            placeholder="Escribí un mensaje..."
+            placeholderTextColor="#888"
+            multiline
+            autoFocus
+            style={styles.input}
+          />
+          <Pressable
+            onPress={handleSend}
+            disabled={!canSend}
+            style={[styles.sendButton, !canSend && { opacity: 0.4 }]}
+          >
+            <Ionicons name="send" size={18} color="#ffffff" />
+          </Pressable>
+        </ThemedView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#333",
+  },
+  headerTitle: { flex: 1, fontSize: 18, fontWeight: "600" },
+  body: { flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: 24 },
+  hint: { textAlign: "center", opacity: 0.6 },
+  inputBar: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 8,
+    padding: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "#333",
+  },
+  input: {
+    flex: 1,
+    maxHeight: 120,
+    color: "#ffffff",
+    borderWidth: 1,
+    borderColor: "#555",
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontSize: 16,
+  },
+  sendButton: {
+    backgroundColor: "#3c87f7",
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 });

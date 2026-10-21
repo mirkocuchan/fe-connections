@@ -51,7 +51,7 @@ export default function DiscoverScreen() {
   const listData = isSearching ? searchResults : users;
 
   return (
-    <SafeAreaView style={{ flex: 1 }} edges={['left', 'right', 'bottom']}>
+    <SafeAreaView style={{ flex: 1 }} edges={['left', 'right']}>
       <ThemedView style={styles.container}>
         <ThemedView style={styles.topBar}>
           <TextInput

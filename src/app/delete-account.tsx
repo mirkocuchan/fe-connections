@@ -1,12 +1,14 @@
+import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { formStyles } from '@/constants/form-styles';
 import { apiFetchChecked } from '@/utils/api';
 import { disconnectSocket } from '@/utils/socket';
 import { setUnreadTotal } from '@/utils/unread';
 import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { useState } from 'react';
-import { Alert, Button, StyleSheet, TextInput } from 'react-native';
+import { Alert, Pressable, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function DeleteAccountScreen() {
@@ -45,7 +47,7 @@ export default function DeleteAccountScreen() {
       );
       return;
     }
-    disconnectSocket(); 
+    disconnectSocket();
     setUnreadTotal(0);   //borra la pizarra de la cuenta anterior con los chats sin leer
     await SecureStore.deleteItemAsync("token");
     await SecureStore.deleteItemAsync("refresh_token");
@@ -55,10 +57,9 @@ export default function DeleteAccountScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
+      <ScreenHeader title="Eliminar cuenta" />
       <ThemedView style={styles.container}>
-        <Button title="← Volver" onPress={() => router.back()} />
-        <ThemedText type="title">Eliminar cuenta</ThemedText>
-        <ThemedText>
+        <ThemedText style={styles.warning}>
           Vas a borrar tu cuenta de forma definitiva: tu perfil, tus fotos, tus historias y todos tus chats.
           Para confirmar, ingresá tu contraseña.
         </ThemedText>
@@ -66,16 +67,20 @@ export default function DeleteAccountScreen() {
           value={password}
           onChangeText={setPassword}
           placeholder="Tu contraseña"
+          placeholderTextColor="#888"
           secureTextEntry
           autoCapitalize="none"
-          style={{ color: '#ffffff', borderWidth: 1, borderColor: '#555555', padding: 8 }}
+          style={formStyles.input}
         />
-        <Button
-          title={deleting ? "Eliminando..." : "Eliminar mi cuenta"}
-          color="#ff4d4d"
+        <Pressable
+          style={[styles.deleteButton, deleting && { opacity: 0.5 }]}
           onPress={confirmDelete}
           disabled={deleting}
-        />
+        >
+          <ThemedText style={formStyles.buttonText}>
+            {deleting ? "Eliminando..." : "Eliminar mi cuenta"}
+          </ThemedText>
+        </Pressable>
       </ThemedView>
     </SafeAreaView>
   );
@@ -83,4 +88,11 @@ export default function DeleteAccountScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16, gap: 16 },
+  warning: { opacity: 0.8 },
+  deleteButton: {
+    backgroundColor: '#ff4d4d',
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
 });

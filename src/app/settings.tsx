@@ -5,29 +5,56 @@ import { apiFetch, apiFetchChecked } from '@/utils/api';
 import { unregisterPush } from '@/utils/push';
 import { disconnectSocket } from '@/utils/socket';
 import { setUnreadTotal } from '@/utils/unread';
+import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { useCallback, useState } from 'react';
-import { Alert, Button, Pressable, StyleSheet, Switch, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+type PushMode = "off" | "name" | "full";
+
+const PUSH_OPTIONS: { value: PushMode; label: string }[] = [
+  { value: "off", label: "No recibir notificaciones" },
+  { value: "name", label: "Avisar sin mostrar el mensaje" },
+  { value: "full", label: "Mostrar el texto del mensaje" },
+];
+
+function Row({
+  label,
+  onPress,
+  danger,
+  chevron = true,
+}: {
+  label: string;
+  onPress: () => void;
+  danger?: boolean;
+  chevron?: boolean;
+}) {
+  return (
+    <Pressable style={styles.row} onPress={onPress}>
+      <ThemedText style={[styles.rowText, danger && { color: '#ff4d4d' }]}>{label}</ThemedText>
+      {chevron && <Ionicons name="chevron-forward" size={18} color="#888" />}
+    </Pressable>
+  );
+}
 
 export default function SettingsScreen() {
   const [globalDiscovery, setGlobalDiscovery] = useState(false);
-  const [pushMode, setPushMode] = useState<"off" | "name" | "full">("name");
+  const [pushMode, setPushMode] = useState<PushMode>("name");
 
   useFocusEffect(
     useCallback(() => {
-    async function loadSettings() {
-      const [me, push] = await Promise.all([
-        apiFetch("/me"),
-        apiFetch("/me/push-mode"),
-      ]);
-      if (me) setGlobalDiscovery(me.global_discovery);
-      if (push?.mode) setPushMode(push.mode);
-    }
-    loadSettings();
-  }, [])
+      async function loadSettings() {
+        const [me, push] = await Promise.all([
+          apiFetch("/me"),
+          apiFetch("/me/push-mode"),
+        ]);
+        if (me) setGlobalDiscovery(me.global_discovery);
+        if (push?.mode) setPushMode(push.mode);
+      }
+      loadSettings();
+    }, [])
   );
 
   async function handleToggleGlobal(value: boolean) {
@@ -61,8 +88,8 @@ export default function SettingsScreen() {
     await SecureStore.deleteItemAsync("my_user_id");
     router.replace("/login");
   }
-  
-  async function changePushMode(mode: "off" | "name" | "full") {
+
+  async function changePushMode(mode: PushMode) {
     const { ok, data } = await apiFetchChecked("/me/push-mode", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -74,52 +101,79 @@ export default function SettingsScreen() {
     }
     setPushMode(mode);
   }
+
   return (
     <SafeAreaView style={{ flex: 1 }}>
-      <ThemedView style={styles.container}>
-        <Button title="← Volver" onPress={() => router.back()} />
-        <ThemedText type="title">Configuración</ThemedText>
+      <ThemedView style={styles.header}>
+        <Pressable onPress={() => router.back()} hitSlop={12}>
+          <Ionicons name="chevron-back" size={26} color="#ffffff" />
+        </Pressable>
+        <ThemedText style={styles.headerTitle}>Configuración</ThemedText>
+      </ThemedView>
 
+      <ScrollView contentContainerStyle={styles.content}>
+        <ThemedText style={styles.section}>Descubrir</ThemedText>
         <View style={styles.row}>
           <View style={{ flex: 1 }}>
-            <ThemedText>Recomendaciones globales</ThemedText>
-            <ThemedText style={{ fontSize: 12, opacity: 0.6 }}>
-              Ver gente de cualquier país en Discover
-            </ThemedText>
+            <ThemedText style={styles.rowText}>Recomendaciones globales</ThemedText>
+            <ThemedText style={styles.sub}>Ver gente de cualquier país en Descubrir</ThemedText>
           </View>
           <Switch value={globalDiscovery} onValueChange={handleToggleGlobal} />
         </View>
-        <ThemedText type="subtitle">Notificaciones</ThemedText>
-          {[
-            { value: "off", label: "No recibir notificaciones" },
-            { value: "name", label: "Avisar sin mostrar el mensaje" },
-            { value: "full", label: "Mostrar el texto del mensaje" },
-          ].map((opt) => (
-            <Button
-              key={opt.value}
-              title={(pushMode === opt.value ? "✓ " : "") + opt.label}
-              onPress={() => changePushMode(opt.value as "off" | "name" | "full")}
+
+        <ThemedText style={styles.section}>Notificaciones</ThemedText>
+        {PUSH_OPTIONS.map((opt) => (
+          <Pressable key={opt.value} style={styles.row} onPress={() => changePushMode(opt.value)}>
+            <ThemedText style={styles.rowText}>{opt.label}</ThemedText>
+            <Ionicons
+              name={pushMode === opt.value ? "radio-button-on" : "radio-button-off"}
+              size={22}
+              color={pushMode === opt.value ? "#3c87f7" : "#888"}
             />
-          ))}
-        <Pressable style={styles.row} onPress={() => router.push("/blocked-users")}>
-          <ThemedText style={{ flex: 1 }}>Usuarios bloqueados</ThemedText>
-          <ThemedText>›</ThemedText>
-        </Pressable>
-        <Pressable style={styles.row} onPress={() => router.push("/change-password")}>
-          <ThemedText style={{ flex: 1 }}>Cambiar contraseña</ThemedText>
-          <ThemedText>›</ThemedText>
-        </Pressable>
-        <Button title="Cerrar sesión" onPress={handleLogout} />
-          <Pressable style={styles.row} onPress={() => router.push("/delete-account")}>
-            <ThemedText style={{ flex: 1, color: '#ff4d4d' }}>Eliminar cuenta</ThemedText>
-            <ThemedText>›</ThemedText>
           </Pressable>
-      </ThemedView>
+        ))}
+        <ThemedText style={styles.section}>Legal</ThemedText>
+        <Row label="Términos y condiciones" onPress={() => router.push("/terms")} />
+        <Row label="Reglas de la comunidad" onPress={() => router.push("/community-rules")} />
+        <Row label="Política de privacidad" onPress={() => router.push("/privacy")} />
+        <ThemedText style={styles.section}>Cuenta</ThemedText>
+        <Row label="Usuarios bloqueados" onPress={() => router.push("/blocked-users")} />
+        <Row label="Cambiar contraseña" onPress={() => router.push("/change-password")} />
+        <Row label="Cerrar sesión" chevron={false} onPress={handleLogout} />
+        <Row label="Eliminar cuenta" danger onPress={() => router.push("/delete-account")} />
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, gap: 16 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#333',
+  },
+  headerTitle: { fontSize: 18, fontWeight: '600' },
+  content: { paddingHorizontal: 16, paddingBottom: 32 },
+  section: {
+    fontSize: 13,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    opacity: 0.6,
+    marginTop: 24,
+    marginBottom: 4,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#333',
+  },
+  rowText: { flex: 1, fontSize: 16 },
+  sub: { fontSize: 12, opacity: 0.6, marginTop: 2 },
 });

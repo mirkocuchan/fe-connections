@@ -1,12 +1,14 @@
+import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { formStyles } from '@/constants/form-styles';
 import { apiFetchChecked } from '@/utils/api';
 import { disconnectSocket } from '@/utils/socket';
 import { setUnreadTotal } from '@/utils/unread';
 import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { useState } from 'react';
-import { Alert, Button, StyleSheet, TextInput } from 'react-native';
+import { Alert, Pressable, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function ChangePasswordScreen() {
@@ -48,7 +50,7 @@ export default function ChangePasswordScreen() {
       );
       return;
     }
-    disconnectSocket(); 
+    disconnectSocket();
     // el servidor cerró todas las sesiones: limpio la mía y vuelvo al login
     setUnreadTotal(0);   //borra la pizarra de la cuenta anterior con la cantidad de chats sin leer
     await SecureStore.deleteItemAsync("token");
@@ -60,34 +62,44 @@ export default function ChangePasswordScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
+      <ScreenHeader title="Cambiar contraseña" />
       <ThemedView style={styles.container}>
-        <Button title="← Volver" onPress={() => router.back()} />
-        <ThemedText type="title">Cambiar contraseña</ThemedText>
         <TextInput
           value={currentPassword}
           onChangeText={setCurrentPassword}
           placeholder="Contraseña actual"
+          placeholderTextColor="#888"
           secureTextEntry
           autoCapitalize="none"
-          style={styles.input}
+          style={formStyles.input}
         />
         <TextInput
           value={newPassword}
           onChangeText={setNewPassword}
           placeholder="Nueva contraseña"
+          placeholderTextColor="#888"
           secureTextEntry
           autoCapitalize="none"
-          style={styles.input}
+          style={formStyles.input}
         />
         <TextInput
           value={repeatPassword}
           onChangeText={setRepeatPassword}
           placeholder="Repetir nueva contraseña"
+          placeholderTextColor="#888"
           secureTextEntry
           autoCapitalize="none"
-          style={styles.input}
+          style={formStyles.input}
         />
-        <Button title={saving ? "Guardando..." : "Cambiar contraseña"} onPress={handleSave} disabled={saving} />
+        <Pressable
+          style={[formStyles.button, saving && { opacity: 0.5 }]}
+          onPress={handleSave}
+          disabled={saving}
+        >
+          <ThemedText style={formStyles.buttonText}>
+            {saving ? "Guardando..." : "Cambiar contraseña"}
+          </ThemedText>
+        </Pressable>
       </ThemedView>
     </SafeAreaView>
   );
@@ -95,5 +107,4 @@ export default function ChangePasswordScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16, gap: 16 },
-  input: { color: '#ffffff', borderWidth: 1, borderColor: '#555555', padding: 8 },
 });

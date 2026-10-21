@@ -5,7 +5,7 @@ import { formStyles } from "@/constants/form-styles";
 import DateTimePicker, { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
 import { Link, router } from 'expo-router';
 import { useState } from "react";
-import { Button, Platform, Pressable, StyleSheet, TextInput } from "react-native";
+import { Platform, Pressable, StyleSheet, TextInput } from "react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function RegisterScreen() {
@@ -21,6 +21,10 @@ export default function RegisterScreen() {
   function handleRegister() {
     if (!dob) {
       setErrorMessage("Elegí tu fecha de nacimiento");
+      return;
+    }
+    if (!isAdult(dob)) {
+      setErrorMessage("Tenés que ser mayor de 18 años para registrarte");
       return;
     }
     if (!accepted) {
@@ -104,7 +108,9 @@ export default function RegisterScreen() {
                 if (selected) setDob(selected);
               }}
             />
-            <Button title="Listo" onPress={() => setShowPicker(false)} />
+            <Pressable onPress={() => setShowPicker(false)} style={formStyles.button}>
+              <ThemedText style={formStyles.buttonText}>Listo</ThemedText>
+            </Pressable>
           </>
         )}
 
@@ -112,13 +118,26 @@ export default function RegisterScreen() {
           <Pressable onPress={() => setAccepted(!accepted)} hitSlop={10}>
             <ThemedText style={styles.checkbox}>{accepted ? "☑" : "☐"}</ThemedText>
           </Pressable>
-          <ThemedText style={formStyles.linkText}>
-            Acepto los{" "}
+          <ThemedText style={[formStyles.linkText, { flex: 1 }]}>
+            Declaro ser mayor de 18 años y acepto los{" "}
             <Link href="/terms">
               <ThemedText type="linkPrimary" style={formStyles.linkText}>
                 términos y condiciones
               </ThemedText>
             </Link>
+            {", las "}
+            <Link href="/community-rules">
+              <ThemedText type="linkPrimary" style={formStyles.linkText}>
+                reglas de la comunidad
+              </ThemedText>
+            </Link>
+            {" y la "}
+            <Link href="/privacy">
+              <ThemedText type="linkPrimary" style={formStyles.linkText}>
+                política de privacidad
+              </ThemedText>
+            </Link>
+            .
           </ThemedText>
         </ThemedView>
 
@@ -150,6 +169,15 @@ function toDMY(d: Date) {
   return `${day}/${m}/${y}`;
 }
 
+function isAdult(d: Date) {
+  const today = new Date();
+  let age = today.getFullYear() - d.getFullYear();
+  const hadBirthday =
+    today.getMonth() > d.getMonth() ||
+    (today.getMonth() === d.getMonth() && today.getDate() >= d.getDate());
+  if (!hadBirthday) age--;
+  return age >= 18;
+}
 const styles = StyleSheet.create({
   termsRow: {
     flexDirection: "row",

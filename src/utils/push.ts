@@ -1,7 +1,7 @@
 import { apiFetch, apiFetchChecked } from '@/utils/api';
+import { Notifications } from '@/utils/notifications';
 import Constants from 'expo-constants';
 import * as Device from 'expo-device';
-import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 
@@ -9,7 +9,7 @@ const PUSH_TOKEN_KEY = 'push_token';
 
 export async function registerForPush() {
   try {
-    if (!Device.isDevice) return;
+    if (!Notifications || !Device.isDevice) return;
 
     const { status: existing } = await Notifications.getPermissionsAsync();
     let status = existing;

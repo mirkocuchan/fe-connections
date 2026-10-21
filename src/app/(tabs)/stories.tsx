@@ -215,7 +215,7 @@ export default function StoriesScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1 }} edges={['left', 'right', 'bottom']}>
+    <SafeAreaView style={{ flex: 1 }} edges={['left', 'right']}>
       <ThemedView style={styles.container}>
         <Pressable
           style={styles.publishButton}

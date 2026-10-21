@@ -1,13 +1,15 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { API_BASE_URL } from '@/constants/api';
+import { formStyles } from '@/constants/form-styles';
 import { apiFetch, apiFetchChecked } from '@/utils/api';
 import { chooseImageSource } from '@/utils/imagePicker';
+import { Ionicons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system/legacy';
 import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { useEffect, useState } from 'react';
-import { Alert, Button, Image, Pressable, StyleSheet, TextInput } from 'react-native';
+import { Alert, Image, KeyboardAvoidingView, Pressable, StyleSheet, TextInput } from 'react-native';
 import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -15,6 +17,7 @@ export default function EditProfileScreen() {
   const [bio, setBio] = useState("");
   const [city, setCity] = useState("");
   const [country, setCountry] = useState("");
+  const [photos, setPhotos] = useState<any[]>([]);
 
   async function fetchProfile() {
     const data = await apiFetch("/me");
@@ -38,8 +41,6 @@ export default function EditProfileScreen() {
     router.back();
   }
 
-  const [photos, setPhotos] = useState<any[]>([]);
-
   async function fetchPhotos() {
     const data = await apiFetch("/me/photos");
     if (data) setPhotos(data);
@@ -57,12 +58,17 @@ export default function EditProfileScreen() {
         headers: { Authorization: "Bearer " + token },
       }
     );
+    if (uploadResult.status !== 200) {
+      Alert.alert("No se pudo subir la foto", "Intentá de nuevo");
+      return;
+    }
     const uploadData = JSON.parse(uploadResult.body);
 
+    //la posición la decide el servidor
     await apiFetch("/me/photos", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ photo_url: uploadData.url, position: photos.length }),
+      body: JSON.stringify({ photo_url: uploadData.url }),
     });
     fetchPhotos();
   }
@@ -88,59 +94,112 @@ export default function EditProfileScreen() {
   }
 
   async function handleReorder(newOrder: any[]) {
-    setPhotos(newOrder); // se ve el cambio al instante
-    const result = await apiFetch("/me/photos/order", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ photo_ids: newOrder.map((p) => p.photo_id) }),
+    setPhotos(newOrder); //se ve el cambio al instante
+    await apiFetch("/me/photos/order", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ photo_ids: newOrder.map((p) => p.photo_id) }),
     });
-    fetchPhotos(); // si falló, volvemos al orden del servidor
+    fetchPhotos(); //si falló, volvemos al orden del servidor
   }
 
   useEffect(() => {
     fetchProfile();
-    fetchPhotos()
+    fetchPhotos();
   }, []);
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
-      <ThemedView style={styles.container}>
-        <DraggableFlatList
-          data={photos}
-          keyExtractor={(item) => item.photo_id}
-          horizontal
-          style={{ maxHeight: 110 }}
-          onDragEnd={({ data }) => handleReorder(data)}
-          renderItem={({ item, drag, isActive }) => (
-            <ScaleDecorator>
-              <Pressable 
-                onPress={() => handlePhotoOptions(item)}
-                onLongPress={drag}
-                disabled={isActive}
-              >
-                <Image source={{ uri: item.photo_url }}
-                  style={{ width: 80, height: 80, borderRadius: 8, marginHorizontal: 4 }} />
-              </Pressable>
-            </ScaleDecorator>
-          )}
-        />
-        <Button title="Agregar foto" onPress={() => chooseImageSource(uploadAndAddPhoto)} />
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
+        <ThemedView style={styles.header}>
+          <Pressable onPress={() => router.back()} hitSlop={12}>
+            <Ionicons name="chevron-back" size={26} color="#ffffff" />
+          </Pressable>
+          <ThemedText style={styles.headerTitle}>Editar perfil</ThemedText>
+        </ThemedView>
 
-        <TextInput value={bio} onChangeText={setBio} placeholder="Bio"
-          style={styles.input} />
-        <TextInput value={city} onChangeText={setCity} placeholder="Ciudad"
-          style={styles.input} />
-        <TextInput value={country} onChangeText={setCountry} placeholder="País"
-          style={styles.input} />
-        <Button title="Guardar" onPress={handleSave} />
+        <ThemedView style={styles.container}>
+          <DraggableFlatList
+            data={photos}
+            keyExtractor={(item) => item.photo_id}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={{ flexGrow: 0 }}
+            containerStyle={{ flexGrow: 0 }}
+            onDragEnd={({ data }) => handleReorder(data)}
+            renderItem={({ item, drag, isActive }) => (
+              <ScaleDecorator>
+                <Pressable
+                  onPress={() => handlePhotoOptions(item)}
+                  onLongPress={drag}
+                  disabled={isActive}
+                >
+                  <Image source={{ uri: item.photo_url }} style={styles.photo} />
+                </Pressable>
+              </ScaleDecorator>
+            )}
+          />
+          <ThemedText style={styles.hint}>
+            Tocá una foto para borrarla. Mantenela apretada para reordenar. La primera es la principal.
+          </ThemedText>
 
-        <ThemedText type="subtitle">Usuarios bloqueados</ThemedText>
-      </ThemedView>
+          <Pressable style={styles.secondary} onPress={() => chooseImageSource(uploadAndAddPhoto)}>
+            <ThemedText style={styles.secondaryText}>Agregar foto</ThemedText>
+          </Pressable>
+
+          <TextInput
+            value={bio}
+            onChangeText={setBio}
+            placeholder="Bio"
+            placeholderTextColor="#888"
+            multiline
+            style={[formStyles.input, styles.bio]}
+          />
+          <TextInput
+            value={city}
+            onChangeText={setCity}
+            placeholder="Ciudad"
+            placeholderTextColor="#888"
+            style={formStyles.input}
+          />
+          <TextInput
+            value={country}
+            onChangeText={setCountry}
+            placeholder="País"
+            placeholderTextColor="#888"
+            style={formStyles.input}
+          />
+
+          <Pressable style={formStyles.button} onPress={handleSave}>
+            <ThemedText style={formStyles.buttonText}>Guardar</ThemedText>
+          </Pressable>
+        </ThemedView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, gap: 8 },
-  input: { color: '#ffffff', borderWidth: 1, borderColor: '#555555', padding: 8 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#333',
+  },
+  headerTitle: { fontSize: 18, fontWeight: '600' },
+  container: { flex: 1, padding: 16, gap: 12 },
+  photo: { width: 90, height: 90, borderRadius: 10, marginRight: 8 },
+  hint: { fontSize: 12, opacity: 0.6 },
+  secondary: {
+    borderWidth: 1,
+    borderColor: '#3c87f7',
+    borderRadius: 8,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  secondaryText: { color: '#3c87f7', fontSize: 16, fontWeight: '600' },
+  bio: { minHeight: 80, textAlignVertical: 'top' },
 });

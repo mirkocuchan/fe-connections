@@ -122,51 +122,66 @@ export default function ChatsScreen() {
     chat.nickname.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  return (
-    <SafeAreaView style={{ flex: 1 }} edges={['left', 'right', 'bottom']}>
+    return (
+    <SafeAreaView style={{ flex: 1 }} edges={['left', 'right']}>
       <ThemedView style={styles.container}>
         <TextInput
           value={searchQuery}
           onChangeText={setSearchQuery}
           placeholder="Buscar..."
-          style={{ color: '#ffffff', borderWidth: 1, borderColor: '#555555', padding: 8 }}
+          placeholderTextColor="#888"
+          autoCapitalize="none"
+          autoCorrect={false}
+          style={styles.search}
         />
         <FlatList
           data={filteredChats}
           keyExtractor={(item) => item.chat_id}
           refreshing={refreshing}
           onRefresh={handleRefresh}
-          renderItem={({ item }) => (
-            <Pressable
-              onPress={() => openChat(item)}
-              onLongPress={() => showChatOptions(item)}
-            >
-              <ThemedView style={{ flexDirection: 'row', alignItems: 'center', padding: 8, gap: 8 }}>
-                <Pressable onPress={() => setZoomedPhoto(item.photo_url)}>
-                  <Image
-                    source={item.photo_url ? { uri: item.photo_url } : require('@/assets/images/icon.png')}
-                    style={{ width: 50, height: 50, borderRadius: 25 }}
-                  />
+          renderItem={({ item }) => {
+            const unread = item.unread_count > 0;
+            const initial = item.nickname?.startsWith("anon-")
+              ? "?"
+              : (item.nickname ?? "?").charAt(0).toUpperCase();
+            return (
+              <Pressable
+                style={styles.row}
+                onPress={() => openChat(item)}
+                onLongPress={() => showChatOptions(item)}
+              >
+                <Pressable
+                  onPress={() => item.photo_url && setZoomedPhoto(item.photo_url)}
+                  hitSlop={6}
+                >
+                  {item.photo_url ? (
+                    <Image source={{ uri: item.photo_url }} style={styles.avatar} />
+                  ) : (
+                    <ThemedView style={[styles.avatar, styles.avatarEmpty]}>
+                      <ThemedText style={styles.avatarLetter}>{initial}</ThemedText>
+                    </ThemedView>
+                  )}
                 </Pressable>
-                <ThemedView>
-                  <ThemedText style={item.unread_count > 0 ? { fontWeight: '700' } : undefined}>
+                <ThemedView style={styles.info}>
+                  <ThemedText style={[styles.name, unread && { fontWeight: '700' }]} numberOfLines={1}>
                     {item.nickname}
                   </ThemedText>
-                  {item.blocked && <ThemedText>Bloqueado</ThemedText>}
-                  <ThemedText>{item.last_message}</ThemedText>
+                  <ThemedText style={[styles.last, unread && { opacity: 1 }]} numberOfLines={1}>
+                    {item.blocked ? "Bloqueado · " : ""}{item.last_message}
+                  </ThemedText>
                 </ThemedView>
-                {item.unread_count > 0 && (
+                {unread && (
                   <ThemedView style={styles.badge}>
                     <ThemedText style={styles.badgeText}>
                       {item.unread_count > 99 ? "99+" : item.unread_count}
                     </ThemedText>
                   </ThemedView>
                 )}
-              </ThemedView>
-            </Pressable>
-          )}
+              </Pressable>
+            );
+          }}
           ListEmptyComponent={
-            <ThemedText>
+            <ThemedText style={styles.empty}>
               {searchQuery
                 ? "No se encontraron chats con ese nombre."
                 : "¡Iniciá alguna conversación para ver algo acá!"}
@@ -209,4 +224,29 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     lineHeight: 16,
   },
+  search: {
+    marginHorizontal: 12,
+    marginVertical: 10,
+    color: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#555',
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontSize: 16,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  avatar: { width: 50, height: 50, borderRadius: 25 },
+  avatarEmpty: { backgroundColor: '#444', alignItems: 'center', justifyContent: 'center' },
+  avatarLetter: { fontSize: 22, fontWeight: '600', color: '#fff' },
+  info: { flex: 1 },
+  name: { fontSize: 17 },
+  last: { fontSize: 14, opacity: 0.6, marginTop: 2 },
+  empty: { textAlign: 'center', marginTop: 32, opacity: 0.6 },
 });

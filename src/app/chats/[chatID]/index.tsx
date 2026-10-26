@@ -251,7 +251,7 @@ export default function ChatScreen() {
           keyExtractor={(item) => item.message_id}
           onEndReached={loadOlder}
           onEndReachedThreshold={0.5}
-          ListFooterComponent={loadingOlder ? <ActivityIndicator style={{ margin: 12 }} /> : null}
+          ListFooterComponent={loadingOlder ? <ActivityIndicator style={{ margin: 12 }} /> : undefined}
           renderItem={({ item }) => (
             <ThemedView
               style={{

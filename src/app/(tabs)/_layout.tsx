@@ -13,7 +13,7 @@ export default function TabLayout() {
           title: "Chats",
           tabBarBadge: unread > 0 ? (unread > 99 ? "99+" : unread) : undefined,
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="chatbubbles-outline" size={size} color={color} />
+            <Ionicons name="chatbubbles-outline" size={size} color={color as string} />
           ),
         }}
       />
@@ -22,7 +22,7 @@ export default function TabLayout() {
         options={{
           title: "Descubrir",
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="compass-outline" size={size} color={color} />
+            <Ionicons name="compass-outline" size={size} color={color as string} />
           ),
         }}
       />
@@ -31,7 +31,7 @@ export default function TabLayout() {
         options={{
           title: "Perfil",
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person-outline" size={size} color={color} />
+            <Ionicons name="person-outline" size={size} color={color as string} />
           ),
         }}
       />
@@ -40,7 +40,7 @@ export default function TabLayout() {
         options={{
           title: "Historias",
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="images-outline" size={size} color={color} />
+            <Ionicons name="images-outline" size={size} color={color as string} />
           ),
         }}
       />

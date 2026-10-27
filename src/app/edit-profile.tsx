@@ -9,7 +9,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { useEffect, useState } from 'react';
-import { Alert, Image, KeyboardAvoidingView, Pressable, StyleSheet, TextInput } from 'react-native';
+import { Alert, Image, KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, TextInput } from 'react-native';
 import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -18,28 +18,43 @@ export default function EditProfileScreen() {
   const [city, setCity] = useState("");
   const [country, setCountry] = useState("");
   const [photos, setPhotos] = useState<any[]>([]);
+  const [displayName, setDisplayName] = useState("");
+  const [hobbies, setHobbies] = useState("");
+  const [languages, setLanguages] = useState("");
+  const [saved, setSaved] = useState(false);
 
   async function fetchProfile() {
     const data = await apiFetch("/me");
     if (data) {
+      setDisplayName(data.display_name || "");
       setBio(data.bio || "");
       setCity(data.city || "");
       setCountry(data.country || "");
+      setHobbies(data.hobbies || "");
+      setLanguages(data.languages || "");
     }
   }
 
-  async function handleSave() {
-    const { ok, data } = await apiFetchChecked("/me", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ bio, city, country }),
-    });
-    if (!ok) {
-      Alert.alert("No se pudo guardar", data?.error || "Intentá de nuevo");
-      return;
+    async function handleSave() {
+      const { ok, data } = await apiFetchChecked("/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          display_name: displayName,
+          bio,
+          city,
+          country,
+          hobbies,
+          languages,
+        }),
+      });
+      if (!ok) {
+        Alert.alert("No se pudo guardar", data?.error || "Intentá de nuevo");
+        return;
+      }
+      setSaved(true);
+      setTimeout(() => router.back(), 700); //se ve "Guardado" un instante y vuelve
     }
-    router.back();
-  }
 
   async function fetchPhotos() {
     const data = await apiFetch("/me/photos");
@@ -108,74 +123,108 @@ export default function EditProfileScreen() {
     fetchPhotos();
   }, []);
 
-  return (
-    <SafeAreaView style={{ flex: 1 }}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
-        <ThemedView style={styles.header}>
-          <Pressable onPress={() => router.back()} hitSlop={12}>
-            <Ionicons name="chevron-back" size={26} color="#ffffff" />
-          </Pressable>
-          <ThemedText style={styles.headerTitle}>Editar perfil</ThemedText>
-        </ThemedView>
+    return (
+      <SafeAreaView style={{ flex: 1 }}>
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
+          <ThemedView style={styles.header}>
+            <Pressable onPress={() => router.back()} hitSlop={12}>
+              <Ionicons name="chevron-back" size={26} color="#ffffff" />
+            </Pressable>
+            <ThemedText style={styles.headerTitle}>Editar perfil</ThemedText>
+          </ThemedView>
 
-        <ThemedView style={styles.container}>
-          <DraggableFlatList
-            data={photos}
-            keyExtractor={(item) => item.photo_id}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={{ flexGrow: 0 }}
-            containerStyle={{ flexGrow: 0 }}
-            onDragEnd={({ data }) => handleReorder(data)}
-            renderItem={({ item, drag, isActive }) => (
-              <ScaleDecorator>
-                <Pressable
-                  onPress={() => handlePhotoOptions(item)}
-                  onLongPress={drag}
-                  disabled={isActive}
-                >
-                  <Image source={{ uri: item.photo_url }} style={styles.photo} />
-                </Pressable>
-              </ScaleDecorator>
-            )}
-          />
-          <ThemedText style={styles.hint}>
-            Tocá una foto para borrarla. Mantenela apretada para reordenar. La primera es la principal.
-          </ThemedText>
+          <ThemedView style={{ flex: 1 }}>
+            <ThemedView style={{ paddingHorizontal: 16, paddingTop: 16 }}>
+              <DraggableFlatList
+                data={photos}
+                keyExtractor={(item) => item.photo_id}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={{ flexGrow: 0 }}
+                containerStyle={{ flexGrow: 0 }}
+                onDragEnd={({ data }) => handleReorder(data)}
+                renderItem={({ item, drag, isActive }) => (
+                  <ScaleDecorator>
+                    <Pressable
+                      onPress={() => handlePhotoOptions(item)}
+                      onLongPress={drag}
+                      disabled={isActive}
+                    >
+                      <Image source={{ uri: item.photo_url }} style={styles.photo} />
+                    </Pressable>
+                  </ScaleDecorator>
+                )}
+              />
+            </ThemedView>
 
-          <Pressable style={styles.secondary} onPress={() => chooseImageSource(uploadAndAddPhoto)}>
-            <ThemedText style={styles.secondaryText}>Agregar foto</ThemedText>
-          </Pressable>
+            <ScrollView
+              contentContainerStyle={styles.container}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="on-drag"
+            >
+              <ThemedText style={styles.hint}>
+                Tocá una foto para borrarla. Mantenela apretada para reordenar. La primera es la principal.
+              </ThemedText>
 
-          <TextInput
-            value={bio}
-            onChangeText={setBio}
-            placeholder="Bio"
-            placeholderTextColor="#888"
-            multiline
-            style={[formStyles.input, styles.bio]}
-          />
-          <TextInput
-            value={city}
-            onChangeText={setCity}
-            placeholder="Ciudad"
-            placeholderTextColor="#888"
-            style={formStyles.input}
-          />
-          <TextInput
-            value={country}
-            onChangeText={setCountry}
-            placeholder="País"
-            placeholderTextColor="#888"
-            style={formStyles.input}
-          />
+              <Pressable style={styles.secondary} onPress={() => chooseImageSource(uploadAndAddPhoto)}>
+                <ThemedText style={styles.secondaryText}>Agregar foto</ThemedText>
+              </Pressable>
 
-          <Pressable style={formStyles.button} onPress={handleSave}>
-            <ThemedText style={formStyles.buttonText}>Guardar</ThemedText>
-          </Pressable>
-        </ThemedView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+              <TextInput
+                value={displayName}
+                onChangeText={setDisplayName}
+                placeholder="Nombre"
+                placeholderTextColor="#888"
+                style={formStyles.input}
+              />
+              <TextInput
+                value={bio}
+                onChangeText={setBio}
+                placeholder="Bio"
+                placeholderTextColor="#888"
+                multiline
+                style={[formStyles.input, styles.bio]}
+              />
+              <TextInput
+                value={city}
+                onChangeText={setCity}
+                placeholder="Ciudad"
+                placeholderTextColor="#888"
+                style={formStyles.input}
+              />
+              <TextInput
+                value={country}
+                onChangeText={setCountry}
+                placeholder="País"
+                placeholderTextColor="#888"
+                style={formStyles.input}
+              />
+              <TextInput
+                value={hobbies}
+                onChangeText={setHobbies}
+                placeholder="Hobbies (ej: cine, correr, guitarra)"
+                placeholderTextColor="#888"
+                style={formStyles.input}
+              />
+              <TextInput
+                value={languages}
+                onChangeText={setLanguages}
+                placeholder="Idiomas (ej: español, inglés)"
+                placeholderTextColor="#888"
+                style={formStyles.input}
+              />
+
+              <Pressable
+                style={[formStyles.button, saved && { backgroundColor: '#34c759' }]}
+                onPress={handleSave}
+                disabled={saved}
+              >
+                <ThemedText style={formStyles.buttonText}>{saved ? "Guardado ✓" : "Guardar"}</ThemedText>
+              </Pressable>
+            </ScrollView>
+          </ThemedView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
   );
 }
 
@@ -190,7 +239,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#333',
   },
   headerTitle: { fontSize: 18, fontWeight: '600' },
-  container: { flex: 1, padding: 16, gap: 12 },
+  container: { padding: 16, gap: 12 },
   photo: { width: 90, height: 90, borderRadius: 10, marginRight: 8 },
   hint: { fontSize: 12, opacity: 0.6 },
   secondary: {

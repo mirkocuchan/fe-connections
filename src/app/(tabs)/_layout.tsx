@@ -1,12 +1,21 @@
 import { useUnreadTotal } from "@/utils/unread";
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
-
+export const unstable_settings = { anchor: 'index' };
 export default function TabLayout() {
   const unread = useUnreadTotal();
-
+  
   return (
     <Tabs>
+      <Tabs.Screen
+        name="stories"
+        options={{
+          title: "Historias",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="images-outline" size={size} color={color as string} />
+          ),
+        }}
+      />
       <Tabs.Screen
         name="index"
         options={{
@@ -32,15 +41,6 @@ export default function TabLayout() {
           title: "Perfil",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="person-outline" size={size} color={color as string} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="stories"
-        options={{
-          title: "Historias",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="images-outline" size={size} color={color as string} />
           ),
         }}
       />

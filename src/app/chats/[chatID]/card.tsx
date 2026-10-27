@@ -4,23 +4,25 @@ import { ThemedView } from '@/components/themed-view';
 import { formStyles } from '@/constants/form-styles';
 import { apiFetch, apiFetchChecked } from '@/utils/api';
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const NOT_REVEALED = "not revealed yet...";
 
-// key = lo que espera el endpoint de revelar; valueKey = campo de la ficha
+//key = lo que espera el endpoint de revelar -> valueKey = campo de la ficha
 const FIELDS = [
-  { key: "name", label: "Nombre", valueKey: "display_name_value" },
-  { key: "date_of_birth", label: "Fecha de nacimiento", valueKey: "date_of_birth_value" },
-  { key: "city", label: "Ciudad", valueKey: "city_value" },
-  { key: "country", label: "País", valueKey: "country_value" },
-  { key: "bio", label: "Bio", valueKey: "bio_value" },
-  { key: "hobbies", label: "Hobbies", valueKey: "hobbies_value" },
-  { key: "languages", label: "Idiomas", valueKey: "languages_value" },
+  { key: "name", label: "Nombre", valueKey: "display_name_value", profileKey: "display_name" },
+  { key: "date_of_birth", label: "Fecha de nacimiento", valueKey: "date_of_birth_value", profileKey: "date_of_birth" },
+  { key: "city", label: "Ciudad", valueKey: "city_value", profileKey: "city" },
+  { key: "country", label: "País", valueKey: "country_value", profileKey: "country" },
+  { key: "bio", label: "Bio", valueKey: "bio_value", profileKey: "bio" },
+  { key: "hobbies", label: "Hobbies", valueKey: "hobbies_value", profileKey: "hobbies" },
+  { key: "languages", label: "Idiomas", valueKey: "languages_value", profileKey: "languages" },
 ];
+
+type Field = (typeof FIELDS)[number];
 
 function isRevealed(value: any) {
   return value != null && String(value) !== "" && value !== NOT_REVEALED;
@@ -30,12 +32,40 @@ export default function CardScreen() {
   const { chatID } = useLocalSearchParams();
   const [card, setCard] = useState<any>(null);
   const [notesInput, setNotesInput] = useState("");
+  const [notesSaved, setNotesSaved] = useState(false);
 
   async function fetchCard() {
     const data = await apiFetch("/chats/" + chatID + "/card");
     if (!data) return;
     setCard(data);
     setNotesInput(data.notes_on_subject?.Valid ? data.notes_on_subject.String : "");
+  }
+
+  const [me, setMe] = useState<any>(null);
+
+  async function fetchMe() {
+    const data = await apiFetch("/me");
+    if (data) setMe(data);
+  }
+
+  //tengo cargado este dato en mi perfil?
+  function hasValue(f: Field) {
+    return me != null && String(me[f.profileKey] ?? "").trim() !== "";
+  }
+  //ya se lo revelé a esta persona?
+  function revealedByMe(f: Field) {
+    return !!card?.my_reveals?.[f.key];
+  }
+
+  function confirmRevealAll() {
+    Alert.alert(
+      "Revelar todo",
+      "Esta persona va a ver todos tus datos y no vas a poder volver a ocultarlos. ¿Seguro?",
+      [
+        { text: "Cancelar", style: "cancel" },
+        { text: "Revelar", onPress: handleRevealAll },
+      ]
+    );
   }
 
   async function handleReveal(field: string) {
@@ -60,6 +90,8 @@ export default function CardScreen() {
       return;
     }
     fetchCard();
+    setNotesSaved(true);
+    setTimeout(() => setNotesSaved(false), 2000); //el aviso desaparece solo a los 2 segundos
   }
 
   async function handleRevealAll() {
@@ -97,10 +129,12 @@ export default function CardScreen() {
 
   useEffect(() => {
     fetchCard();
+    fetchMe();
   }, []);
 
   const nickname = card?.nickname?.Valid ? card.nickname.String : "Sin apodo";
-
+  const allDone = FIELDS.every((f) => !hasValue(f) || revealedByMe(f));
+  
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <ScreenHeader title={card ? nickname : "Ficha"} />
@@ -109,7 +143,7 @@ export default function CardScreen() {
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
         >
-          {card && (
+          {card && me && (
             <>
               <ThemedText style={styles.section}>Lo que sabés de esta persona</ThemedText>
               {FIELDS.map((f) => {
@@ -139,22 +173,42 @@ export default function CardScreen() {
                 multiline
                 style={[formStyles.input, styles.notes]}
               />
-              <Pressable style={styles.secondary} onPress={handleSaveNotes}>
-                <ThemedText style={styles.secondaryText}>Guardar notas</ThemedText>
+              <Pressable style={[styles.secondary, notesSaved && styles.secondaryDone]} onPress={handleSaveNotes}>
+                <ThemedText style={[styles.secondaryText, notesSaved && styles.secondaryTextDone]}>
+                  {notesSaved ? "Guardado ✓" : "Guardar notas"}
+                </ThemedText>
               </Pressable>
 
               <ThemedText style={styles.section}>Lo que mostrás de vos</ThemedText>
+              <ThemedText style={styles.note}>Lo que reveles no se puede volver a ocultar.</ThemedText>
               {FIELDS.map((f) => (
                 <ThemedView key={f.key} style={styles.row}>
                   <ThemedText style={styles.label}>{f.label}</ThemedText>
-                  <Pressable style={styles.reveal} onPress={() => handleReveal(f.key)}>
-                    <ThemedText style={styles.revealText}>Revelar</ThemedText>
-                  </Pressable>
+                  {!hasValue(f) ? (
+                    <Pressable onPress={() => router.push("/edit-profile")}>
+                      <ThemedText style={styles.emptyLink}>Completar en tu perfil</ThemedText>
+                    </Pressable>
+                  ) : revealedByMe(f) ? (
+                    <ThemedView style={styles.done}>
+                      <Ionicons name="checkmark-circle" size={16} color="#34c759" />
+                      <ThemedText style={styles.doneText}>Revelado</ThemedText>
+                    </ThemedView>
+                  ) : (
+                    <Pressable style={styles.reveal} onPress={() => handleReveal(f.key)}>
+                      <ThemedText style={styles.revealText}>Revelar</ThemedText>
+                    </Pressable>
+                  )}
                 </ThemedView>
               ))}
 
-              <Pressable style={[formStyles.button, { marginTop: 16 }]} onPress={handleRevealAll}>
-                <ThemedText style={formStyles.buttonText}>Revelar todo</ThemedText>
+              <Pressable
+                style={[formStyles.button, { marginTop: 16 }, allDone && styles.disabled]}
+                disabled={allDone}
+                onPress={confirmRevealAll}
+              >
+                <ThemedText style={formStyles.buttonText}>
+                  {allDone ? "Todo revelado" : "Revelar todo"}
+                </ThemedText>
               </Pressable>
               <Pressable style={styles.danger} onPress={confirmReset}>
                 <ThemedText style={styles.dangerText}>Resetear ficha</ThemedText>
@@ -217,4 +271,11 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   dangerText: { color: '#ff4d4d', fontSize: 16, fontWeight: '600' },
+  note: { fontSize: 13, opacity: 0.6, marginBottom: 4 },
+  done: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  doneText: { color: '#34c759', fontSize: 14, fontWeight: '600' },
+  emptyLink: { color: '#888', fontSize: 14, textDecorationLine: 'underline' },
+  disabled: { opacity: 0.5 },
+  secondaryDone: { borderColor: '#34c759' },
+  secondaryTextDone: { color: '#34c759' },
 });

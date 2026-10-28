@@ -4,8 +4,8 @@ import { ThemedView } from '@/components/themed-view';
 import { formStyles } from '@/constants/form-styles';
 import { apiFetch, apiFetchChecked } from '@/utils/api';
 import { Ionicons } from '@expo/vector-icons';
-import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -127,10 +127,12 @@ export default function CardScreen() {
     );
   }
 
-  useEffect(() => {
-    fetchCard();
-    fetchMe();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchCard();
+      fetchMe();
+    }, [chatID])
+  );
 
   const nickname = card?.nickname?.Valid ? card.nickname.String : "Sin apodo";
   const allDone = FIELDS.every((f) => !hasValue(f) || revealedByMe(f));

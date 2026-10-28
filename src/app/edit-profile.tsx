@@ -9,8 +9,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { useEffect, useState } from 'react';
-import { Alert, Image, KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, TextInput } from 'react-native';
-import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
+import { Alert, FlatList, Image, KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function EditProfileScreen() {
@@ -35,26 +34,26 @@ export default function EditProfileScreen() {
     }
   }
 
-    async function handleSave() {
-      const { ok, data } = await apiFetchChecked("/me", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          display_name: displayName,
-          bio,
-          city,
-          country,
-          hobbies,
-          languages,
-        }),
-      });
-      if (!ok) {
-        Alert.alert("No se pudo guardar", data?.error || "Intentá de nuevo");
-        return;
-      }
-      setSaved(true);
-      setTimeout(() => router.back(), 700); //se ve "Guardado" un instante y vuelve
+  async function handleSave() {
+    const { ok, data } = await apiFetchChecked("/me", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        display_name: displayName,
+        bio,
+        city,
+        country,
+        hobbies,
+        languages,
+      }),
+    });
+    if (!ok) {
+      Alert.alert("No se pudo guardar", data?.error || "Intentá de nuevo");
+      return;
     }
+    setSaved(true);
+    setTimeout(() => router.back(), 700); //se ve "Guardado" un instante y vuelve
+  }
 
   async function fetchPhotos() {
     const data = await apiFetch("/me/photos");
@@ -117,6 +116,12 @@ export default function EditProfileScreen() {
     });
     fetchPhotos(); //si falló, volvemos al orden del servidor
   }
+  async function movePhoto(from: number, to: number) {
+    const next = [...photos];
+    const [moved] = next.splice(from, 1); //saca la foto de su lugar
+    next.splice(to, 0, moved);            //la mete en el nuevo
+    await handleReorder(next);            //reutiliza lo que ya tenías
+  }
 
   useEffect(() => {
     fetchProfile();
@@ -135,24 +140,33 @@ export default function EditProfileScreen() {
 
           <ThemedView style={{ flex: 1 }}>
             <ThemedView style={{ paddingHorizontal: 16, paddingTop: 16 }}>
-              <DraggableFlatList
+                <FlatList
                 data={photos}
                 keyExtractor={(item) => item.photo_id}
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 style={{ flexGrow: 0 }}
-                containerStyle={{ flexGrow: 0 }}
-                onDragEnd={({ data }) => handleReorder(data)}
-                renderItem={({ item, drag, isActive }) => (
-                  <ScaleDecorator>
-                    <Pressable
-                      onPress={() => handlePhotoOptions(item)}
-                      onLongPress={drag}
-                      disabled={isActive}
-                    >
-                      <Image source={{ uri: item.photo_url }} style={styles.photo} />
-                    </Pressable>
-                  </ScaleDecorator>
+                renderItem={({ item, index }) => (
+                  <Pressable onPress={() => handlePhotoOptions(item)} style={styles.photoWrap}>
+                    <Image source={{ uri: item.photo_url }} style={styles.photo} />
+                    {index === 0 && (
+                      <View style={styles.mainBadge}>
+                        <ThemedText style={styles.mainBadgeText}>Principal</ThemedText>
+                      </View>
+                    )}
+                    <View style={styles.arrows}>
+                      {index > 0 ? (
+                        <Pressable hitSlop={8} style={styles.arrowBtn} onPress={() => movePhoto(index, index - 1)}>
+                          <Ionicons name="chevron-back" size={16} color="#fff" />
+                        </Pressable>
+                      ) : <View />}
+                      {index < photos.length - 1 ? (
+                        <Pressable hitSlop={8} style={styles.arrowBtn} onPress={() => movePhoto(index, index + 1)}>
+                          <Ionicons name="chevron-forward" size={16} color="#fff" />
+                        </Pressable>
+                      ) : <View />}
+                    </View>
+                  </Pressable>
                 )}
               />
             </ThemedView>
@@ -163,7 +177,7 @@ export default function EditProfileScreen() {
               keyboardDismissMode="on-drag"
             >
               <ThemedText style={styles.hint}>
-                Tocá una foto para borrarla. Mantenela apretada para reordenar. La primera es la principal.
+                Tocá una foto para borrarla. Usá las flechas para moverla. La primera es la principal.
               </ThemedText>
 
               <Pressable style={styles.secondary} onPress={() => chooseImageSource(uploadAndAddPhoto)}>
@@ -240,7 +254,23 @@ const styles = StyleSheet.create({
   },
   headerTitle: { fontSize: 18, fontWeight: '600' },
   container: { padding: 16, gap: 12 },
-  photo: { width: 90, height: 90, borderRadius: 10, marginRight: 8 },
+  photoWrap: { marginRight: 8 },
+  photo: { width: 90, height: 90, borderRadius: 10 },
+  mainBadge: {
+    position: 'absolute', top: 4, left: 4,
+    backgroundColor: '#3c87f7', borderRadius: 6,
+    paddingHorizontal: 6, paddingVertical: 2,
+  },
+  mainBadgeText: { color: '#fff', fontSize: 10, fontWeight: '600' },
+  arrows: {
+    position: 'absolute', bottom: 4, left: 4, right: 4,
+    flexDirection: 'row', justifyContent: 'space-between',
+  },
+  arrowBtn: {
+    width: 24, height: 24, borderRadius: 12,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    alignItems: 'center', justifyContent: 'center',
+  },
   hint: { fontSize: 12, opacity: 0.6 },
   secondary: {
     borderWidth: 1,

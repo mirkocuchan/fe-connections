@@ -6,7 +6,7 @@ export default function TabLayout() {
   const unread = useUnreadTotal();
   
   return (
-    <Tabs>
+    <Tabs backBehavior="initialRoute">
       <Tabs.Screen
         name="stories"
         options={{

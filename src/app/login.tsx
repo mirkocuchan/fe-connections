@@ -37,7 +37,8 @@ export default function LoginScreen() {
       await SecureStore.setItemAsync("my_user_id", data.id);
       registerForPush(); //sin await: no frena el login
       connectSocket();   //abrir la línea recién logueado
-      router.replace("/(tabs)");
+      const seen = await SecureStore.getItemAsync("welcome_seen_" + data.id);
+      router.replace(seen ? "/(tabs)" : "/welcome");
     } catch (error) {
       setErrorMessage("No se pudo conectar con el servidor");
     }

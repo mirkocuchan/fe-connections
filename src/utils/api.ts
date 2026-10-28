@@ -1,6 +1,7 @@
 import { API_BASE_URL } from '@/constants/api';
 import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
+import { Alert } from 'react-native';
 
 export async function clearSession() {
   await SecureStore.deleteItemAsync("token");
@@ -64,13 +65,26 @@ async function authedFetch(path: string, options: any = {}): Promise<Response | 
       return null;
     }
   }
-
+  //cuenta suspendida: cerramos sesión y avisamos
+  if (response.status === 403) {
+    const body = await response.clone().json().catch(() => null);
+    if (body?.error === "account suspended") {
+      await clearSession();
+      Alert.alert(
+        "Cuenta suspendida",
+        "Tu cuenta fue suspendida por no cumplir las reglas de la comunidad."
+      );
+      router.replace("/login");
+      return null;
+    }
+  }
   return response;
 }
 
 export async function apiFetch(path: string, options: any = {}) {
   const response = await authedFetch(path, options);
-  return response ? response.json() : null;
+  if (!response || !response.ok) return null; //un error ya no se confunde con datos
+  return response.json();
 }
 
 export async function apiFetchChecked(path: string, options: any = {}) {

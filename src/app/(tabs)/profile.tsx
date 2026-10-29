@@ -1,10 +1,11 @@
+import { SkeletonBox } from '@/components/skeleton';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { apiFetch } from '@/utils/api';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Dimensions, FlatList, Image, Pressable, StyleSheet } from 'react-native';
+import { Dimensions, FlatList, Image, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const PHOTO_W = Dimensions.get("window").width - 32;
@@ -14,22 +15,33 @@ export default function ProfileScreen() {
   const [profile, setProfile] = useState<any>(null);
   const [photos, setPhotos] = useState<any[]>([]);
   const [photoIndex, setPhotoIndex] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
 
-  useFocusEffect(
-    useCallback(() => {
-      async function fetchProfile() {
-        const data = await apiFetch("/me");
-        if (data) setProfile(data);
-      }
-      fetchProfile();
-      fetchPhotos();
-    }, [])
-  );
+  async function fetchProfile() {
+    const data = await apiFetch("/me");
+    if (data) setProfile(data);
+    return !!data;
+  }
 
   async function fetchPhotos() {
     const data = await apiFetch("/me/photos");
     if (data) setPhotos(data);
+    return !!data;
   }
+
+  async function load() {
+    setFailed(false);
+    const [profileOk] = await Promise.all([fetchProfile(), fetchPhotos()]);
+    if (!profileOk) setFailed(true);
+    setLoading(false);
+  }
+
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [])
+  );
 
   const location = profile
     ? [profile.city, profile.country].filter(Boolean).join(", ")
@@ -38,6 +50,23 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={{ flex: 1 }} edges={['left', 'right']}>
       <ThemedView style={styles.container}>
+        {loading && (
+          <>
+            <SkeletonBox style={{ width: PHOTO_W, height: PHOTO_W * 1.1, borderRadius: 16 }} />
+            <SkeletonBox style={{ height: 30, width: '50%', borderRadius: 8, marginTop: 4 }} />
+            <SkeletonBox style={{ height: 16, width: '80%', borderRadius: 8 }} />
+          </>
+        )}
+
+        {!loading && failed && !profile && (
+          <View style={styles.center}>
+            <ThemedText>No se pudo cargar tu perfil.</ThemedText>
+            <Pressable style={styles.button} onPress={load}>
+              <ThemedText style={styles.buttonText}>Reintentar</ThemedText>
+            </Pressable>
+          </View>
+        )}
+
         {profile && (
           <>
             <FlatList
@@ -86,12 +115,12 @@ export default function ProfileScreen() {
                 {location || "Sin ubicación"}
               </ThemedText>
             </ThemedView>
+
+            <Pressable style={styles.button} onPress={() => router.push("/edit-profile")}>
+              <ThemedText style={styles.buttonText}>Editar perfil</ThemedText>
+            </Pressable>
           </>
         )}
-
-        <Pressable style={styles.button} onPress={() => router.push("/edit-profile")}>
-          <ThemedText style={styles.buttonText}>Editar perfil</ThemedText>
-        </Pressable>
       </ThemedView>
     </SafeAreaView>
   );
@@ -117,5 +146,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 8,
   },
+  center: { alignItems: 'center', gap: 12, marginTop: 40 },
   buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
 });

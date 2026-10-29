@@ -1,3 +1,5 @@
+import { EmptyState } from '@/components/empty-state';
+import { SkeletonBox } from '@/components/skeleton';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { API_BASE_URL } from '@/constants/api';
@@ -7,7 +9,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { useFocusEffect } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Button, Dimensions, FlatList, Image, Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, TextInput } from 'react-native';
+import { ActivityIndicator, Alert, Button, Dimensions, FlatList, Image, Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 
@@ -62,10 +64,24 @@ export default function StoriesScreen() {
   const [sendingReply, setSendingReply] = useState(false);
   const [replySent, setReplySent] = useState(false);
   const replying = replyFocused || replyText.length > 0;
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   async function fetchStories() {
-    const data = await apiFetch("/stories");
-    if (data) setStories(data);
+    try {
+      const data = await apiFetch("/stories");
+      if (data) setStories(data);
+    } catch {
+      //sin conexión: dejamos lo que había
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleRefresh() {
+    setRefreshing(true);
+    await fetchStories();
+    setRefreshing(false);
   }
   
   useFocusEffect(
@@ -230,6 +246,8 @@ export default function StoriesScreen() {
           numColumns={COLUMNS}
           contentContainerStyle={{ padding: GAP, gap: GAP }}
           columnWrapperStyle={{ gap: GAP }}
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
           renderItem={({ item: group }) => {
             const cover = group[0];
             const hasUnviewed = group.some((s: any) => !s.viewed_at);
@@ -255,9 +273,19 @@ export default function StoriesScreen() {
             );
           }}
           ListEmptyComponent={
-            <ThemedText style={{ textAlign: 'center', marginTop: 24 }}>
-              No hay historias activas todavía.
-            </ThemedText>
+            loading ? (
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: GAP }}>
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <SkeletonBox key={i} style={{ width: TILE_WIDTH, height: TILE_HEIGHT, borderRadius: 12 }} />
+                ))}
+              </View>
+            ) : (
+              <EmptyState
+                icon="images-outline"
+                title="Todavía no hay historias"
+                text="Las historias desaparecen solas con el tiempo. Publicá la primera."
+              />
+            )
           }
         />
 

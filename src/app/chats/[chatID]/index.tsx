@@ -2,7 +2,8 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { apiFetch, apiFetchChecked } from '@/utils/api';
 import { setActiveChat } from '@/utils/push';
-import { onSocketEvent } from '@/utils/socket';
+import { onSocketEvent, sendSocketEvent } from '@/utils/socket';
+import { dayLabel, formatTime, sameDay } from '@/utils/time';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -45,6 +46,9 @@ export default function ChatScreen() {
   const [loadingOlder, setLoadingOlder] = useState(false);
   const loadingOlderRef = useRef(false);
   const [sheet, setSheet] = useState<Sheet>(null);
+  const [otherTyping, setOtherTyping] = useState(false);
+  const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastTypingSent = useRef(0);
 
   // la lista invertida necesita el más nuevo primero, nuestro estado está en orden cronológico
   const invertedMessages = useMemo(() => [...messages].reverse(), [messages]);
@@ -107,6 +111,14 @@ export default function ChatScreen() {
     }
   }
 
+  function handleChangeText(text: string) {
+    setContent(text);
+    const now = Date.now();
+    if (text.length > 0 && now - lastTypingSent.current > 2500) {
+      lastTypingSent.current = now;
+      sendSocketEvent({ type: "typing", chat_id: chatID });
+    }
+  }
   async function fetchCard() {
     const { ok, data } = await apiFetchChecked("/chats/" + chatID + "/card");
     if (!ok) {
@@ -204,16 +216,25 @@ export default function ChatScreen() {
 
   //mensajes en vivo
   useEffect(() => {
-    return onSocketEvent((ev) => {
+    const unsubscribe = onSocketEvent((ev) => {
       if (ev.type === "resync") {
         fetchMessages();
       } else if (ev.type === "new_message" && ev.chat_id === chatID) {
+        setOtherTyping(false);
         setMessages((prev) =>
           prev.some((m) => m.message_id === ev.message.message_id) ? prev : [...prev, ev.message]
         );
         markRead();
+      } else if (ev.type === "typing" && ev.chat_id === chatID) {
+        setOtherTyping(true);
+        if (typingTimer.current) clearTimeout(typingTimer.current);
+        typingTimer.current = setTimeout(() => setOtherTyping(false), 4000);
       }
     });
+    return () => {
+      unsubscribe();
+      if (typingTimer.current) clearTimeout(typingTimer.current);
+    };
   }, [chatID]);
 
   return (
@@ -228,6 +249,7 @@ export default function ChatScreen() {
             <ThemedText style={styles.headerTitle} numberOfLines={1}>
               {chatName}
             </ThemedText>
+            {otherTyping && <ThemedText style={styles.typing}>escribiendo…</ThemedText>}
           </Pressable>
           <Pressable onPress={() => setSheet("menu")} hitSlop={12}>
             <Ionicons name="ellipsis-vertical" size={22} color="#ffffff" />
@@ -252,38 +274,49 @@ export default function ChatScreen() {
           onEndReached={loadOlder}
           onEndReachedThreshold={0.5}
           ListFooterComponent={loadingOlder ? <ActivityIndicator style={{ margin: 12 }} /> : undefined}
-          renderItem={({ item }) => (
-            <ThemedView
-              style={{
-                alignSelf: item.is_mine ? 'flex-end' : 'flex-start',
-                backgroundColor: item.is_mine ? '#2b5278' : '#333',
-                paddingHorizontal: 12,
-                paddingVertical: 8,
-                borderRadius: 16,
-                marginVertical: 4,
-                maxWidth: '80%',
-              }}
-            >
-              {item.is_story_reply && (
-                <>
-                  <ThemedText style={{ fontSize: 12, opacity: 0.6 }}>
-                    {item.is_mine ? "Respondiste a una historia" : "Respondió a tu historia"}
-                  </ThemedText>
-                  {item.story_media_url && item.story_media_type === "image" ? (
-                    <Image
-                      source={{ uri: item.story_media_url }}
-                      style={{ width: 80, height: 120, borderRadius: 6, marginVertical: 4 }}
-                    />
-                  ) : (
-                    <ThemedText style={{ fontSize: 12, opacity: 0.6 }}>
-                      {item.story_media_url ? "🎬 Historia en video" : "Historia expirada"}
-                    </ThemedText>
+          renderItem={({ item, index }) => {
+            //la lista está invertida: el siguiente elemento es el mensaje más viejo
+            const older = invertedMessages[index + 1];
+            const showDay = !older || !sameDay(older.created_at, item.created_at);
+            return (
+              <>
+                {showDay && (
+                  <ThemedText style={styles.daySeparator}>{dayLabel(item.created_at)}</ThemedText>
+                )}
+                <ThemedView
+                  style={{
+                    alignSelf: item.is_mine ? 'flex-end' : 'flex-start',
+                    backgroundColor: item.is_mine ? '#2b5278' : '#333',
+                    paddingHorizontal: 12,
+                    paddingVertical: 8,
+                    borderRadius: 16,
+                    marginVertical: 4,
+                    maxWidth: '80%',
+                  }}
+                >
+                  {item.is_story_reply && (
+                    <>
+                      <ThemedText style={{ fontSize: 12, opacity: 0.6 }}>
+                        {item.is_mine ? "Respondiste a una historia" : "Respondió a tu historia"}
+                      </ThemedText>
+                      {item.story_media_url && item.story_media_type === "image" ? (
+                        <Image
+                          source={{ uri: item.story_media_url }}
+                          style={{ width: 80, height: 120, borderRadius: 6, marginVertical: 4 }}
+                        />
+                      ) : (
+                        <ThemedText style={{ fontSize: 12, opacity: 0.6 }}>
+                          {item.story_media_url ? "🎬 Historia en video" : "Historia expirada"}
+                        </ThemedText>
+                      )}
+                    </>
                   )}
-                </>
-              )}
-              <ThemedText>{item.content}</ThemedText>
-            </ThemedView>
-          )}
+                  <ThemedText>{item.content}</ThemedText>
+                  <ThemedText style={styles.time}>{formatTime(item.created_at)}</ThemedText>
+                </ThemedView>
+              </>
+            );
+          }}
           ListEmptyComponent={
             <ThemedView style={{ transform: [{ scaleY: -1 }] }}>
               <ThemedText>Todavía no hay mensajes. ¡Escribí el primero!</ThemedText>
@@ -296,7 +329,7 @@ export default function ChatScreen() {
           <ThemedView style={styles.inputBar}>
             <TextInput
               value={content}
-              onChangeText={setContent}
+              onChangeText={handleChangeText}
               placeholder="Escribí un mensaje..."
               placeholderTextColor="#888"
               multiline
@@ -433,6 +466,7 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: "#333",
   },
+  typing: { fontSize: 12, color: "#3c87f7" },
   messageInput: {
     flex: 1,
     maxHeight: 120,
@@ -495,6 +529,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 12,
   },
+  daySeparator: { alignSelf: "center", fontSize: 12, opacity: 0.6, marginVertical: 10 },
+  time: { fontSize: 11, opacity: 0.55, alignSelf: "flex-end", marginTop: 2 },
   primaryButtonText: {
     color: "#ffffff",
     fontSize: 16,

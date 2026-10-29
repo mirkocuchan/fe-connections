@@ -1,12 +1,14 @@
+import { FadeInValue, PopIn } from '@/components/reveal-effects';
 import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { formStyles } from '@/constants/form-styles';
 import { apiFetch, apiFetchChecked } from '@/utils/api';
+import { haptic } from '@/utils/haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCallback, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, TextInput } from 'react-native';
+import { useCallback, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const NOT_REVEALED = "not revealed yet...";
@@ -33,19 +35,40 @@ export default function CardScreen() {
   const [card, setCard] = useState<any>(null);
   const [notesInput, setNotesInput] = useState("");
   const [notesSaved, setNotesSaved] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
+  const [justRevealed, setJustRevealed] = useState<string[]>([]); //lo que acabo de mostrar yo
+  const [fresh, setFresh] = useState<string[]>([]); //lo que acaba de mostrarme la otra persona
+  const prevRevealed = useRef<Record<string, boolean> | null>(null);
 
   async function fetchCard() {
     const data = await apiFetch("/chats/" + chatID + "/card");
-    if (!data) return;
+    if (!data) return false;
+
+    const now: Record<string, boolean> = {};
+    FIELDS.forEach((f) => (now[f.key] = isRevealed(data[f.valueKey])));
+    const before = prevRevealed.current;
+    if (before) {
+      const newly = FIELDS.filter((f) => now[f.key] && !before[f.key]).map((f) => f.key);
+      if (newly.length > 0) {
+        setFresh(newly);
+        haptic.success();
+      }
+    }
+    prevRevealed.current = now;
+
     setCard(data);
     setNotesInput(data.notes_on_subject?.Valid ? data.notes_on_subject.String : "");
+    return true;
   }
 
   const [me, setMe] = useState<any>(null);
 
   async function fetchMe() {
     const data = await apiFetch("/me");
-    if (data) setMe(data);
+    if (!data) return false;
+    setMe(data);
+    return true;
   }
 
   //tengo cargado este dato en mi perfil?
@@ -73,9 +96,12 @@ export default function CardScreen() {
       method: "POST",
     });
     if (!ok) {
+      haptic.error();
       Alert.alert("No se pudo revelar", data?.error || "Intentá de nuevo");
       return;
     }
+    haptic.success();
+    setJustRevealed((prev) => [...prev, field]);
     fetchCard();
   }
 
@@ -89,19 +115,24 @@ export default function CardScreen() {
       Alert.alert("No se pudieron guardar las notas", data?.error || "Intentá de nuevo");
       return;
     }
+    haptic.success();
     fetchCard();
     setNotesSaved(true);
     setTimeout(() => setNotesSaved(false), 2000); //el aviso desaparece solo a los 2 segundos
   }
 
   async function handleRevealAll() {
+    const pending = FIELDS.filter((f) => hasValue(f) && !revealedByMe(f)).map((f) => f.key);
     const { ok, data } = await apiFetchChecked("/chats/" + chatID + "/card/reveal-all", {
       method: "POST",
     });
     if (!ok) {
+      haptic.error();
       Alert.alert("No se pudo revelar todo", data?.error || "Intentá de nuevo");
       return;
     }
+    haptic.success();
+    setJustRevealed((prev) => [...prev, ...pending]);
     fetchCard();
   }
 
@@ -127,10 +158,21 @@ export default function CardScreen() {
     );
   }
 
+  async function load() {
+    setFailed(false);
+    try {
+      const [cardOk, meOk] = await Promise.all([fetchCard(), fetchMe()]);
+      if (!cardOk || !meOk) setFailed(true);
+    } catch {
+      setFailed(true); //sin conexión: fetch lanza un error en vez de devolver null
+    } finally {
+      setLoading(false);
+    }
+  }
+
   useFocusEffect(
     useCallback(() => {
-      fetchCard();
-      fetchMe();
+      load();
     }, [chatID])
   );
 
@@ -144,7 +186,18 @@ export default function CardScreen() {
         <ScrollView
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
-        >
+        > 
+          {loading && <ActivityIndicator style={{ marginTop: 40 }} />}
+
+          {!loading && failed && (
+            <View style={styles.center}>
+              <ThemedText>No se pudo cargar la ficha.</ThemedText>
+              <Pressable style={[styles.secondary, { paddingHorizontal: 24 }]} onPress={load}>
+                <ThemedText style={styles.secondaryText}>Reintentar</ThemedText>
+              </Pressable>
+            </View>
+          )}
+
           {card && me && (
             <>
               <ThemedText style={styles.section}>Lo que sabés de esta persona</ThemedText>
@@ -155,7 +208,9 @@ export default function CardScreen() {
                   <ThemedView key={f.key} style={styles.row}>
                     <ThemedText style={styles.label}>{f.label}</ThemedText>
                     {revealed ? (
-                      <ThemedText style={styles.value}>{String(value)}</ThemedText>
+                      <FadeInValue animate={fresh.includes(f.key)}>
+                        <ThemedText style={styles.value}>{String(value)}</ThemedText>
+                      </FadeInValue>
                     ) : (
                       <ThemedView style={styles.hidden}>
                         <Ionicons name="lock-closed-outline" size={14} color="#888" />
@@ -173,6 +228,7 @@ export default function CardScreen() {
                 placeholder="Notas sobre esta persona..."
                 placeholderTextColor="#888"
                 multiline
+                scrollEnabled={false}
                 style={[formStyles.input, styles.notes]}
               />
               <Pressable style={[styles.secondary, notesSaved && styles.secondaryDone]} onPress={handleSaveNotes}>
@@ -190,13 +246,21 @@ export default function CardScreen() {
                     <Pressable onPress={() => router.push("/edit-profile")}>
                       <ThemedText style={styles.emptyLink}>Completar en tu perfil</ThemedText>
                     </Pressable>
-                  ) : revealedByMe(f) ? (
-                    <ThemedView style={styles.done}>
-                      <Ionicons name="checkmark-circle" size={16} color="#34c759" />
-                      <ThemedText style={styles.doneText}>Revelado</ThemedText>
-                    </ThemedView>
+                    ) : revealedByMe(f) ? (
+                    <PopIn animate={justRevealed.includes(f.key)}>
+                      <ThemedView style={styles.done}>
+                        <Ionicons name="checkmark-circle" size={16} color="#34c759" />
+                        <ThemedText style={styles.doneText}>Revelado</ThemedText>
+                      </ThemedView>
+                    </PopIn>
                   ) : (
-                    <Pressable style={styles.reveal} onPress={() => handleReveal(f.key)}>
+                    <Pressable
+                      style={styles.reveal}
+                      onPress={() => {
+                        haptic.tap();
+                        handleReveal(f.key);
+                      }}
+                    >
                       <ThemedText style={styles.revealText}>Revelar</ThemedText>
                     </Pressable>
                   )}
@@ -280,4 +344,5 @@ const styles = StyleSheet.create({
   disabled: { opacity: 0.5 },
   secondaryDone: { borderColor: '#34c759' },
   secondaryTextDone: { color: '#34c759' },
+  center: { alignItems: 'center', gap: 12, marginTop: 40 },
 });

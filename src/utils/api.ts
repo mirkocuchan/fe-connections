@@ -38,7 +38,8 @@ function refreshSession(): Promise<boolean> {
   return refreshing;
 }
 
-async function authedFetch(path: string, options: any = {}): Promise<Response | null> {
+//el pedido de verdad: puede lanzar un error si no hay conexión
+async function authedFetchRaw(path: string, options: any = {}): Promise<Response | null> {
   const send = (token: string | null) =>
     fetch(API_BASE_URL + path, {
       ...options,
@@ -65,6 +66,7 @@ async function authedFetch(path: string, options: any = {}): Promise<Response | 
       return null;
     }
   }
+
   //cuenta suspendida: cerramos sesión y avisamos
   if (response.status === 403) {
     const body = await response.clone().json().catch(() => null);
@@ -78,19 +80,28 @@ async function authedFetch(path: string, options: any = {}): Promise<Response | 
       return null;
     }
   }
+
   return response;
+}
+
+//el envoltorio: si no hay conexión, devuelve null en vez de romper la pantalla
+async function authedFetch(path: string, options: any = {}): Promise<Response | null> {
+  try {
+    return await authedFetchRaw(path, options);
+  } catch {
+    return null; //sin conexión o tiempo agotado: devolvemos "nada" en vez de romper
+  }
 }
 
 export async function apiFetch(path: string, options: any = {}) {
   const response = await authedFetch(path, options);
-  if (!response || !response.ok) return null; //un error ya no se confunde con datos
-  return response.json();
+  if (!response || !response.ok) return null;
+  return response.json().catch(() => null);
 }
 
 export async function apiFetchChecked(path: string, options: any = {}) {
   const response = await authedFetch(path, options);
   if (!response) return { ok: false, data: null };
-
-  const data = await response.json();
+  const data = await response.json().catch(() => null);
   return { ok: response.ok, data };
 }

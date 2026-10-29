@@ -95,6 +95,10 @@ export function disconnectSocket() {
   s?.close();
 }
 
+export function sendSocketEvent(event: object) {
+  if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(event));
+}
+
 //iOS puede matar el socket sin avisar: al volver a primer plano lo reabrimos siempre
 AppState.addEventListener("change", (state) => {
   if (state !== "active" || !wantConnected) return;

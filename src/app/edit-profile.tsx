@@ -62,16 +62,22 @@ export default function EditProfileScreen() {
 
   async function uploadAndAddPhoto(imageUri: string) {
     const token = await SecureStore.getItemAsync("token");
-    const uploadResult = await FileSystem.uploadAsync(
-      API_BASE_URL + "/upload",
-      imageUri,
-      {
-        httpMethod: "POST",
-        uploadType: FileSystem.FileSystemUploadType.MULTIPART,
-        fieldName: "file",
-        headers: { Authorization: "Bearer " + token },
-      }
-    );
+        let uploadResult: FileSystem.FileSystemUploadResult;
+    try {
+      uploadResult = await FileSystem.uploadAsync(
+        API_BASE_URL + "/upload",
+        imageUri,
+        {
+          httpMethod: "POST",
+          uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+          fieldName: "file",
+          headers: { Authorization: "Bearer " + token },
+        }
+      );
+    } catch {
+      Alert.alert("Sin conexión", "No se pudo subir la foto. Revisá tu conexión e intentá de nuevo.");
+      return;
+    }
     if (uploadResult.status !== 200) {
       Alert.alert("No se pudo subir la foto", "Intentá de nuevo");
       return;
@@ -197,6 +203,7 @@ export default function EditProfileScreen() {
                 placeholder="Bio"
                 placeholderTextColor="#888"
                 multiline
+                scrollEnabled={false}
                 style={[formStyles.input, styles.bio]}
               />
               <TextInput

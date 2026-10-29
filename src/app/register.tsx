@@ -55,9 +55,7 @@ export default function RegisterScreen() {
         value: dob ?? defaultDate,
         mode: "date",
         maximumDate: new Date(),
-        onChange: (event, selected) => {
-          if (event.type === "set" && selected) setDob(selected);
-        },
+        onValueChange: (_event, selected) => setDob(selected),
       });
     } else {
       setShowPicker(true);
@@ -104,9 +102,7 @@ export default function RegisterScreen() {
               mode="date"
               display="spinner"
               maximumDate={new Date()}
-              onChange={(_event, selected) => {
-                if (selected) setDob(selected);
-              }}
+              onValueChange={(_event, selected) => setDob(selected)}
             />
             <Pressable onPress={() => setShowPicker(false)} style={formStyles.button}>
               <ThemedText style={formStyles.buttonText}>Listo</ThemedText>

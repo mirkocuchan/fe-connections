@@ -1,3 +1,5 @@
+import { EmptyState } from '@/components/empty-state';
+import { ChatListSkeleton } from '@/components/skeleton';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { apiFetch, apiFetchChecked } from '@/utils/api';
@@ -15,9 +17,17 @@ export default function ChatsScreen() {
   const [zoomedPhoto, setZoomedPhoto] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
+  const [loading, setLoading] = useState(true);
+
   const fetchChats = useCallback(async () => {
-    const data = await apiFetch("/chats");
-    if (data) setChats(data);
+    try {
+      const data = await apiFetch("/chats");
+      if (data) setChats(data);
+    } catch {
+      //sin conexión: dejamos lo que había
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   //siempre tenemos a mano la lista actual para consultarla dentro del handler del socket
@@ -181,11 +191,19 @@ export default function ChatsScreen() {
             );
           }}
           ListEmptyComponent={
-            <ThemedText style={styles.empty}>
-              {searchQuery
-                ? "No se encontraron chats con ese nombre."
-                : "¡Iniciá alguna conversación para ver algo acá!"}
-            </ThemedText>
+            loading ? (
+              <ChatListSkeleton />
+            ) : searchQuery ? (
+              <EmptyState icon="search-outline" title="Sin resultados" text="No hay chats con ese nombre." />
+            ) : (
+              <EmptyState
+                icon="chatbubbles-outline"
+                title="Todavía no tenés chats"
+                text="Descubrí gente y empezá a charlar. Nadie ve quién sos hasta que vos quieras."
+                actionLabel="Ir a Descubrir"
+                onAction={() => router.navigate("/discover")}
+              />
+            )
           }
         />
         <Modal visible={!!zoomedPhoto} transparent={true} onRequestClose={() => setZoomedPhoto(null)}>

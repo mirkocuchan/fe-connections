@@ -1,3 +1,5 @@
+import { EmptyState } from '@/components/empty-state';
+import { ChatListSkeleton } from '@/components/skeleton';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { apiFetch } from '@/utils/api';
@@ -11,10 +13,25 @@ export default function DiscoverScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [zoomedPhoto, setZoomedPhoto] = useState<string | null>(null);
   const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
 
   async function fetchDiscoverUsers() {
-    const data = await apiFetch("/users/discover");
-    if (data) setUsers(data);
+    try {
+      const data = await apiFetch("/users/discover");
+      if (data) setUsers(data);
+    } catch {
+      //sin conexión: dejamos lo que había
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleRefresh() {
+    setRefreshing(true);
+    await fetchDiscoverUsers();
+    setRefreshing(false);
   }
 
   useFocusEffect(
@@ -27,12 +44,20 @@ export default function DiscoverScreen() {
     const q = searchQuery.trim();
     if (q === "") {
       setSearchResults([]);
+      setSearchLoading(false);
       return;
     }
+    setSearchLoading(true);
     let cancelled = false;
     const timer = setTimeout(async () => {
-      const data = await apiFetch("/users/search?q=" + encodeURIComponent(q));
-      if (!cancelled && Array.isArray(data)) setSearchResults(data);
+      try {
+        const data = await apiFetch("/users/search?q=" + encodeURIComponent(q));
+        if (!cancelled && Array.isArray(data)) setSearchResults(data);
+      } catch {
+        // sin conexión
+      } finally {
+        if (!cancelled) setSearchLoading(false);
+      }
     }, 400);
     return () => {
       cancelled = true;
@@ -75,6 +100,8 @@ export default function DiscoverScreen() {
           keyExtractor={(item) => item.user_id}
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: 16 }}
+          refreshing={refreshing}
+          onRefresh={isSearching ? undefined : handleRefresh}
           renderItem={({ item }) => (
             <Pressable style={styles.row} onPress={() => handlePressUser(item)}>
               <Pressable onPress={() => setZoomedPhoto(item.photo_url)} hitSlop={6}>
@@ -94,11 +121,19 @@ export default function DiscoverScreen() {
             </Pressable>
           )}
           ListEmptyComponent={
-            <ThemedText style={styles.empty}>
-              {isSearching
-                ? "No se encontraron resultados."
-                : "No hay nadie para descubrir todavía."}
-            </ThemedText>
+            loading || (isSearching && searchLoading) ? (
+              <ChatListSkeleton />
+            ) : isSearching ? (
+              <EmptyState icon="search-outline" title="Sin resultados" text="Probá con otro nombre." />
+            ) : (
+              <EmptyState
+                icon="compass-outline"
+                title="Por ahora no hay nadie"
+                text="Volvé a probar en un rato, o activá el descubrimiento global en Ajustes para ver gente de otros países."
+                actionLabel="Actualizar"
+                onAction={handleRefresh}
+              />
+            )
           }
         />
 

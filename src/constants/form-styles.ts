@@ -10,9 +10,9 @@ export const formStyles = StyleSheet.create({
     gap: 12,
   },
   input: {
-    color: "#ffffff",
+    color: Palette.text,
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: Palette.outline,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 12,

@@ -9,7 +9,7 @@ export function ScreenHeader({ title }: { title: string }) {
   return (
     <ThemedView style={styles.header}>
       <Pressable onPress={() => router.back()} hitSlop={12}>
-        <Ionicons name="chevron-back" size={26} color="#ffffff" />
+        <Ionicons name="chevron-back" size={26} color={Palette.text} />
       </Pressable>
       <ThemedText style={styles.title}>{title}</ThemedText>
     </ThemedView>

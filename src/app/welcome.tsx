@@ -104,7 +104,7 @@ const styles = StyleSheet.create({
     width: 140,
     height: 140,
     borderRadius: 70,
-    backgroundColor: 'rgba(60,135,247,0.15)',
+    backgroundColor: Palette.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 24, fontWeight: '700', textAlign: 'center' },
   text: { fontSize: 16, textAlign: 'center', opacity: 0.75, lineHeight: 24 },
   dots: { flexDirection: 'row', justifyContent: 'center', gap: 8, paddingVertical: 16 },
-  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#444' },
+  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: Palette.muted },
   dotActive: { backgroundColor: Palette.primary, width: 22 },
   bottom: { paddingHorizontal: 24, paddingBottom: 16 },
 });

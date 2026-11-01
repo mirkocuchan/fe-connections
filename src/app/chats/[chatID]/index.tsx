@@ -27,7 +27,7 @@ type Sheet = null | "menu" | "nickname" | "report";
 function SheetOption({ label, onPress, danger }: { label: string; onPress: () => void; danger?: boolean }) {
   return (
     <Pressable onPress={onPress} style={styles.sheetOption}>
-      <ThemedText style={[styles.sheetText, danger && { color: "#ff453a" }]}>{label}</ThemedText>
+      <ThemedText style={[styles.sheetText, danger && { color: Palette.danger }]}>{label}</ThemedText>
     </Pressable>
   );
 }
@@ -263,7 +263,7 @@ export default function ChatScreen() {
         {/* encabezado */}
         <ThemedView style={styles.header}>
           <Pressable onPress={() => router.back()} hitSlop={12}>
-            <Ionicons name="chevron-back" size={26} color="#ffffff" />
+            <Ionicons name="chevron-back" size={26} color={Palette.text} />
           </Pressable>
           <Pressable style={{ flex: 1 }} onPress={openProfile} disabled={!otherUserID || !canUseCard}>
             <ThemedText style={styles.headerTitle} numberOfLines={1}>
@@ -272,7 +272,7 @@ export default function ChatScreen() {
             {otherTyping && <ThemedText style={styles.typing}>escribiendo…</ThemedText>}
           </Pressable>
           <Pressable onPress={() => setSheet("menu")} hitSlop={12}>
-            <Ionicons name="ellipsis-vertical" size={22} color="#ffffff" />
+            <Ionicons name="ellipsis-vertical" size={22} color={Palette.text} />
           </Pressable>
         </ThemedView>
 
@@ -284,7 +284,7 @@ export default function ChatScreen() {
               Si algo te incomoda, podés reportar o bloquear desde el menú ⋮.
             </ThemedText>
             <Pressable onPress={dismissTip} hitSlop={10}>
-              <Ionicons name="close" size={18} color="#ffffff" />
+              <Ionicons name="close" size={18} color={Palette.text} />
             </Pressable>
           </View>
         )}
@@ -311,17 +311,13 @@ export default function ChatScreen() {
             //la lista está invertida: el siguiente elemento es el mensaje más viejo
             const older = invertedMessages[index + 1];
             const showDay = !older || !sameDay(older.created_at, item.created_at);
+            const textColor = item.is_mine ? Palette.onPrimary : Palette.text;
             return (
               <>
-                {showDay && (
-                  <ThemedText style={styles.daySeparator}>
-                    {dayLabel(item.created_at)}
-                  </ThemedText>
-                )}
                 <ThemedView
                   style={{
                     alignSelf: item.is_mine ? 'flex-end' : 'flex-start',
-                    backgroundColor: item.is_mine ? '#2b5278' : Palette.border,
+                    backgroundColor: item.is_mine ? Palette.bubbleMine : Palette.bubbleOther,
                     paddingHorizontal: 12,
                     paddingVertical: 8,
                     borderRadius: 16,
@@ -331,7 +327,7 @@ export default function ChatScreen() {
                 >
                   {item.is_story_reply && (
                     <>
-                      <ThemedText style={{ fontSize: 12, opacity: 0.6 }}>
+                      <ThemedText style={{ fontSize: 12, opacity: 0.6, color: textColor }}>
                         {item.is_mine ? "Respondiste a una historia" : "Respondió a tu historia"}
                       </ThemedText>
                       {item.story_media_url && item.story_media_type === "image" ? (
@@ -340,24 +336,31 @@ export default function ChatScreen() {
                           style={{ width: 80, height: 120, borderRadius: 6, marginVertical: 4 }}
                         />
                       ) : (
-                        <ThemedText style={{ fontSize: 12, opacity: 0.6 }}>
+                        <ThemedText style={{ fontSize: 12, opacity: 0.6, color: textColor }}>
                           {item.story_media_url ? "🎬 Historia en video" : "Historia expirada"}
                         </ThemedText>
                       )}
                     </>
                   )}
-                  <ThemedText>{item.content}</ThemedText>
+                  <ThemedText style={{ color: textColor }}>{item.content}</ThemedText>
                   <View style={styles.meta}>
-                    <ThemedText style={styles.time}>{formatTime(item.created_at)}</ThemedText>
+                    <ThemedText style={[styles.time, { color: textColor }]}>
+                      {formatTime(item.created_at)}
+                    </ThemedText>
                     {item.is_mine && (
                       <Ionicons
                         name={item.read_by_other ? "checkmark-done" : "checkmark"}
                         size={14}
-                        color={item.read_by_other ? "#4fc3f7" : "rgba(255,255,255,0.6)"}
+                        color={item.read_by_other ? Palette.onPrimary : "rgba(42,29,8,0.5)"}
                       />
                     )}
                   </View>
                 </ThemedView>
+                {showDay && (
+                  <ThemedText style={styles.daySeparator}>
+                    {dayLabel(item.created_at)}
+                  </ThemedText>
+                )}
               </>
             );
           }}
@@ -384,7 +387,7 @@ export default function ChatScreen() {
               disabled={!content.trim()}
               style={[styles.sendButton, !content.trim() && { opacity: 0.4 }]}
             >
-              <Ionicons name="send" size={18} color="#ffffff" />
+              <Ionicons name="send" size={18} color={Palette.onPrimary} />
             </Pressable>
           </ThemedView>
         )}
@@ -514,9 +517,9 @@ const styles = StyleSheet.create({
   messageInput: {
     flex: 1,
     maxHeight: 120,
-    color: "#ffffff",
+    color: Palette.text,
     borderWidth: 1,
-    borderColor: "#555",
+    borderColor: Palette.outline,
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingTop: 10,
@@ -537,7 +540,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   sheet: {
-    backgroundColor: "#1c1c1e",
+    backgroundColor: Palette.surface,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     paddingHorizontal: 16,
@@ -557,9 +560,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   sheetInput: {
-    color: "#ffffff",
+    color: Palette.text,
     borderWidth: 1,
-    borderColor: "#555",
+    borderColor: Palette.outline,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 12,
@@ -575,7 +578,7 @@ const styles = StyleSheet.create({
   },
   daySeparator: { alignSelf: "center", fontSize: 12, opacity: 0.6, marginVertical: 10 },
   primaryButtonText: {
-    color: "#ffffff",
+    color: Palette.onPrimary,
     fontSize: 16,
     fontWeight: "600",
   },
@@ -588,7 +591,7 @@ const styles = StyleSheet.create({
     margin: 8,
     padding: 12,
     borderRadius: 12,
-    backgroundColor: "rgba(60,135,247,0.15)",
+    backgroundColor: Palette.primarySoft,
   },
   tipText: { flex: 1, fontSize: 13, lineHeight: 18 },
 });

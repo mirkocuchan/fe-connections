@@ -44,7 +44,7 @@ export default function NewChatScreen() {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
         <ThemedView style={styles.header}>
           <Pressable onPress={() => router.back()} hitSlop={12}>
-            <Ionicons name="chevron-back" size={26} color="#ffffff" />
+            <Ionicons name="chevron-back" size={26} color={Palette.text} />
           </Pressable>
           <ThemedText style={styles.headerTitle} numberOfLines={1}>
             {name}
@@ -72,7 +72,7 @@ export default function NewChatScreen() {
             disabled={!canSend}
             style={[styles.sendButton, !canSend && { opacity: 0.4 }]}
           >
-            <Ionicons name="send" size={18} color="#ffffff" />
+            <Ionicons name="send" size={18} color={Palette.onPrimary} />
           </Pressable>
         </ThemedView>
       </KeyboardAvoidingView>
@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
     maxHeight: 120,
     color: Palette.onPrimary,
     borderWidth: 1,
-    borderColor: "#555",
+    borderColor: Palette.outline,
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 10,

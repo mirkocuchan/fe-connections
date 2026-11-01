@@ -102,7 +102,7 @@ export default function ProfileScreen() {
                 {profile.username}
               </ThemedText>
               <Pressable onPress={() => router.push("/settings")} hitSlop={10}>
-                <Ionicons name="settings-outline" size={26} color="#ffffff" />
+                <Ionicons name="settings-outline" size={26} color={Palette.text} />
               </Pressable>
             </ThemedView>
 
@@ -132,8 +132,8 @@ const styles = StyleSheet.create({
   photos: { flexGrow: 0 },
   photo: { width: PHOTO_W, height: PHOTO_W * 1.1, borderRadius: 16 },
   dots: { flexDirection: 'row', justifyContent: 'center', gap: 6 },
-  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#555' },
-  dotActive: { backgroundColor: '#fff' },
+  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: Palette.muted },
+  dotActive: { backgroundColor: Palette.primary },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 4 },
   name: { flex: 1, fontSize: 28, lineHeight: 34, fontWeight: '700' },
   bio: { fontSize: 16 },

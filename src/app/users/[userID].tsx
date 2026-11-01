@@ -6,6 +6,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Dimensions, FlatList, Image, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Palette } from '@/constants/theme';
 
 const PHOTO_W = Dimensions.get("window").width - 32;
 const PHOTO_STEP = PHOTO_W + 8;
@@ -70,8 +71,8 @@ const styles = StyleSheet.create({
   container: { flex: 1, padding: 16, gap: 12 },
   photo: { width: PHOTO_W, height: PHOTO_W * 1.1, borderRadius: 16 },
   dots: { flexDirection: 'row', justifyContent: 'center', gap: 6 },
-  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#555' },
-  dotActive: { backgroundColor: '#fff' },
+  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: Palette.muted },
+  dotActive: { backgroundColor: Palette.primary },
   name: { fontSize: 28, lineHeight: 34, fontWeight: '700' },
   bio: { fontSize: 16 },
   empty: { opacity: 0.5 },

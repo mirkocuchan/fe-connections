@@ -140,7 +140,7 @@ export default function EditProfileScreen() {
         <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
           <ThemedView style={styles.header}>
             <Pressable onPress={() => router.back()} hitSlop={12}>
-              <Ionicons name="chevron-back" size={26} color="#ffffff" />
+              <Ionicons name="chevron-back" size={26} color={Palette.text} />
             </Pressable>
             <ThemedText style={styles.headerTitle}>Editar perfil</ThemedText>
           </ThemedView>

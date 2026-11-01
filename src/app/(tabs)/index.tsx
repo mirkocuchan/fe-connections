@@ -1,8 +1,8 @@
-import { Palette } from '@/constants/theme';
 import { EmptyState } from '@/components/empty-state';
 import { ChatListSkeleton } from '@/components/skeleton';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { Palette } from '@/constants/theme';
 import { apiFetch, apiFetchChecked } from '@/utils/api';
 import { getActiveChat } from '@/utils/push';
 import { onSocketEvent } from '@/utils/socket';
@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   badgeText: {
-    color: '#ffffff',
+    color: Palette.onPrimary,
     fontSize: 12,
     fontWeight: '700',
     lineHeight: 16,
@@ -246,9 +246,9 @@ const styles = StyleSheet.create({
   search: {
     marginHorizontal: 12,
     marginVertical: 10,
-    color: '#ffffff',
+    color: Palette.text,
     borderWidth: 1,
-    borderColor: '#555',
+    borderColor: Palette.outline,
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 10,
@@ -262,8 +262,8 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   avatar: { width: 50, height: 50, borderRadius: 25 },
-  avatarEmpty: { backgroundColor: '#444', alignItems: 'center', justifyContent: 'center' },
-  avatarLetter: { fontSize: 22, fontWeight: '600', color: '#fff' },
+  avatarEmpty: { backgroundColor: Palette.surfaceAlt, alignItems: 'center', justifyContent: 'center' },
+  avatarLetter: { fontSize: 22, fontWeight: '600', color: Palette.text },
   info: { flex: 1 },
   name: { fontSize: 17 },
   last: { fontSize: 14, opacity: 0.6, marginTop: 2 },

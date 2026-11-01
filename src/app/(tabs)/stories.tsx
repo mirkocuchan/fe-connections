@@ -259,7 +259,7 @@ export default function StoriesScreen() {
                   styles.tile,
                   {
                     borderWidth: hasUnviewed ? 3 : 1,
-                    borderColor: hasUnviewed ? '#ff5c5c' : '#555',
+                    borderColor: hasUnviewed ? Palette.storyRing : Palette.outline,
                   },
                 ]}
               >
@@ -371,7 +371,7 @@ export default function StoriesScreen() {
                     onPress={() => {}}
                     style={{
                       position: 'absolute', left: 0, right: 0, bottom: 0,
-                      maxHeight: '50%', backgroundColor: '#1c1c1e',
+                      maxHeight: '50%', backgroundColor: Palette.surface,
                       borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 16,
                     }}
                   >
@@ -413,7 +413,7 @@ const styles = StyleSheet.create({
     height: TILE_HEIGHT,
     borderRadius: 12,
     overflow: 'hidden',   // para que la imagen respete las esquinas redondeadas
-    backgroundColor: '#222',
+    backgroundColor: Palette.surfaceAlt,
     justifyContent: 'flex-end',
   },
   tileName: {

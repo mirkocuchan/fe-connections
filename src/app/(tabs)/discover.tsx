@@ -166,9 +166,9 @@ const styles = StyleSheet.create({
   },
   search: {
     flex: 1,
-    color: '#ffffff',
+    color: Palette.text,
     borderWidth: 1,
-    borderColor: '#555',
+    borderColor: Palette.outline,
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 10,
@@ -192,6 +192,6 @@ const styles = StyleSheet.create({
   avatar: { width: 50, height: 50, borderRadius: 25 },
   name: { flex: 1, fontSize: 17 },
   empty: { textAlign: 'center', marginTop: 32, opacity: 0.7 },
-  avatarEmpty: { backgroundColor: '#444', alignItems: 'center', justifyContent: 'center' },
-  avatarLetter: { fontSize: 22, fontWeight: '600', color: '#fff' },
+  avatarEmpty: { backgroundColor: Palette.surfaceAlt, alignItems: 'center', justifyContent: 'center' },
+  avatarLetter: { fontSize: 22, fontWeight: '600', color: Palette.text },
 });

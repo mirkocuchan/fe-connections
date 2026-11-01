@@ -1,4 +1,3 @@
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { Colors } from '@/constants/theme';
 import { Notifications } from '@/utils/notifications';
 import { getActiveChat, openChatFromNotification, registerForPush } from '@/utils/push';
@@ -7,7 +6,7 @@ import { DarkTheme, Redirect, Stack, ThemeProvider } from 'expo-router';
 import * as SecureStore from "expo-secure-store";
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useRef, useState } from 'react';
-import { Appearance, useColorScheme } from 'react-native';
+import { Appearance } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 Appearance.setColorScheme('dark');
@@ -33,7 +32,6 @@ Notifications?.setNotificationHandler({
 //mostrar, salvo que sea del chat que tengo abierto
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const lastResponse = Notifications ? Notifications.useLastNotificationResponse() : null;
@@ -51,6 +49,11 @@ export default function RootLayout() {
     }
     checkToken();
   }, []);
+
+  //ocultar el splash nativo cuando ya cargó el token
+  useEffect(() => {
+    if (!isLoading) SplashScreen.hideAsync();
+  }, [isLoading]);
 
   //cuando el usuario toca una notificación (app abierta, en segundo plano o cerrada)
   useEffect(() => {
@@ -71,7 +74,6 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider value={AppTheme}>
-        <AnimatedSplashOverlay />
         {!token && <Redirect href="/login" />}
         <Stack screenOptions={{ headerShown: false }} />
       </ThemeProvider>

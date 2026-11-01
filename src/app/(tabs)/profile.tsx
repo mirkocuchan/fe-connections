@@ -1,3 +1,4 @@
+import { Palette } from '@/constants/theme';
 import { SkeletonBox } from '@/components/skeleton';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -110,7 +111,7 @@ export default function ProfileScreen() {
             </ThemedText>
 
             <ThemedView style={styles.locationRow}>
-              <Ionicons name="location-outline" size={16} color="#888" />
+              <Ionicons name="location-outline" size={16} color={Palette.muted} />
               <ThemedText style={location ? styles.location : styles.empty}>
                 {location || "Sin ubicación"}
               </ThemedText>
@@ -140,12 +141,12 @@ const styles = StyleSheet.create({
   location: { fontSize: 15, opacity: 0.8 },
   empty: { opacity: 0.5 },
   button: {
-    backgroundColor: '#3c87f7',
+    backgroundColor: Palette.primary,
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: 'center',
     marginTop: 8,
   },
   center: { alignItems: 'center', gap: 12, marginTop: 40 },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  buttonText: { color: Palette.onPrimary, fontSize: 16, fontWeight: '600' },
 });

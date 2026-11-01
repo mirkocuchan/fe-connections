@@ -1,3 +1,4 @@
+import { Palette } from '@/constants/theme';
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { API_BASE_URL } from "@/constants/api";
@@ -70,7 +71,7 @@ export default function ResetPasswordScreen() {
           keyboardType="email-address"
           autoCapitalize="none"
           style={formStyles.input}
-          placeholderTextColor="#888"
+          placeholderTextColor={Palette.muted}
         />
         <TextInput
           value={code}
@@ -80,7 +81,7 @@ export default function ResetPasswordScreen() {
           maxLength={6}
           textContentType="oneTimeCode"
           style={formStyles.input}
-          placeholderTextColor="#888"
+          placeholderTextColor={Palette.muted}
         />
         <TextInput
           value={password}
@@ -88,7 +89,7 @@ export default function ResetPasswordScreen() {
           placeholder="Contraseña nueva"
           secureTextEntry
           style={formStyles.input}
-          placeholderTextColor="#888"
+          placeholderTextColor={Palette.muted}
         />
         <TextInput
           value={password2}
@@ -96,7 +97,7 @@ export default function ResetPasswordScreen() {
           placeholder="Repetí la contraseña"
           secureTextEntry
           style={formStyles.input}
-          placeholderTextColor="#888"
+          placeholderTextColor={Palette.muted}
         />
         <Pressable
           onPress={handleReset}

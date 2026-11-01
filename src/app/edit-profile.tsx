@@ -1,3 +1,4 @@
+import { Palette } from '@/constants/theme';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { API_BASE_URL } from '@/constants/api';
@@ -194,14 +195,14 @@ export default function EditProfileScreen() {
                 value={displayName}
                 onChangeText={setDisplayName}
                 placeholder="Nombre"
-                placeholderTextColor="#888"
+                placeholderTextColor={Palette.muted}
                 style={formStyles.input}
               />
               <TextInput
                 value={bio}
                 onChangeText={setBio}
                 placeholder="Bio"
-                placeholderTextColor="#888"
+                placeholderTextColor={Palette.muted}
                 multiline
                 scrollEnabled={false}
                 style={[formStyles.input, styles.bio]}
@@ -210,33 +211,33 @@ export default function EditProfileScreen() {
                 value={city}
                 onChangeText={setCity}
                 placeholder="Ciudad"
-                placeholderTextColor="#888"
+                placeholderTextColor={Palette.muted}
                 style={formStyles.input}
               />
               <TextInput
                 value={country}
                 onChangeText={setCountry}
                 placeholder="País"
-                placeholderTextColor="#888"
+                placeholderTextColor={Palette.muted}
                 style={formStyles.input}
               />
               <TextInput
                 value={hobbies}
                 onChangeText={setHobbies}
                 placeholder="Hobbies (ej: cine, correr, guitarra)"
-                placeholderTextColor="#888"
+                placeholderTextColor={Palette.muted}
                 style={formStyles.input}
               />
               <TextInput
                 value={languages}
                 onChangeText={setLanguages}
                 placeholder="Idiomas (ej: español, inglés)"
-                placeholderTextColor="#888"
+                placeholderTextColor={Palette.muted}
                 style={formStyles.input}
               />
 
               <Pressable
-                style={[formStyles.button, saved && { backgroundColor: '#34c759' }]}
+                style={[formStyles.button, saved && { backgroundColor: Palette.success }]}
                 onPress={handleSave}
                 disabled={saved}
               >
@@ -257,7 +258,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#333',
+    borderBottomColor: Palette.border,
   },
   headerTitle: { fontSize: 18, fontWeight: '600' },
   container: { padding: 16, gap: 12 },
@@ -265,10 +266,10 @@ const styles = StyleSheet.create({
   photo: { width: 90, height: 90, borderRadius: 10 },
   mainBadge: {
     position: 'absolute', top: 4, left: 4,
-    backgroundColor: '#3c87f7', borderRadius: 6,
+    backgroundColor: Palette.primary, borderRadius: 6,
     paddingHorizontal: 6, paddingVertical: 2,
   },
-  mainBadgeText: { color: '#fff', fontSize: 10, fontWeight: '600' },
+  mainBadgeText: { color: Palette.onPrimary, fontSize: 10, fontWeight: '600' },
   arrows: {
     position: 'absolute', bottom: 4, left: 4, right: 4,
     flexDirection: 'row', justifyContent: 'space-between',
@@ -281,11 +282,11 @@ const styles = StyleSheet.create({
   hint: { fontSize: 12, opacity: 0.6 },
   secondary: {
     borderWidth: 1,
-    borderColor: '#3c87f7',
+    borderColor: Palette.primary,
     borderRadius: 8,
     paddingVertical: 10,
     alignItems: 'center',
   },
-  secondaryText: { color: '#3c87f7', fontSize: 16, fontWeight: '600' },
+  secondaryText: { color: Palette.primary, fontSize: 16, fontWeight: '600' },
   bio: { minHeight: 80, textAlignVertical: 'top' },
 });

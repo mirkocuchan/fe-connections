@@ -1,3 +1,4 @@
+import { Palette } from '@/constants/theme';
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { API_BASE_URL } from "@/constants/api";
@@ -70,7 +71,7 @@ export default function RegisterScreen() {
           onChangeText={setUsername}
           placeholder="Usuario"
           style={formStyles.input}
-          placeholderTextColor="#888"
+          placeholderTextColor={Palette.muted}
         />
         <TextInput
           value={email}
@@ -79,7 +80,7 @@ export default function RegisterScreen() {
           keyboardType="email-address"
           autoCapitalize="none"
           style={formStyles.input}
-          placeholderTextColor="#888"
+          placeholderTextColor={Palette.muted}
         />
         <TextInput
           value={password}
@@ -87,7 +88,7 @@ export default function RegisterScreen() {
           placeholder="Contraseña"
           secureTextEntry
           style={formStyles.input}
-          placeholderTextColor="#888"
+          placeholderTextColor={Palette.muted}
         />
         <Pressable onPress={openPicker} style={formStyles.input}>
           <ThemedText style={{ opacity: dob ? 1 : 0.5 }}>

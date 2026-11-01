@@ -1,3 +1,4 @@
+import { Palette } from '@/constants/theme';
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { API_BASE_URL } from "@/constants/api";
@@ -54,7 +55,7 @@ export default function LoginScreen() {
         keyboardType="email-address"
         autoCapitalize="none"
         style={formStyles.input}
-        placeholderTextColor="#888"
+        placeholderTextColor={Palette.muted}
       />
       <TextInput
         value={password}
@@ -62,7 +63,7 @@ export default function LoginScreen() {
         placeholder="Contraseña"
         secureTextEntry
         style={formStyles.input}
-        placeholderTextColor="#888"
+        placeholderTextColor={Palette.muted}
       />
       <Pressable onPress={handleLogin} style={formStyles.button}>
         <ThemedText style={formStyles.buttonText}>Iniciar sesión</ThemedText>

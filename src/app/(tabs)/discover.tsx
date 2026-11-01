@@ -1,3 +1,4 @@
+import { Palette } from '@/constants/theme';
 import { EmptyState } from '@/components/empty-state';
 import { ChatListSkeleton } from '@/components/skeleton';
 import { ThemedText } from '@/components/themed-text';
@@ -83,7 +84,7 @@ export default function DiscoverScreen() {
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholder="Buscar por nombre..."
-            placeholderTextColor="#888"
+            placeholderTextColor={Palette.muted}
             autoCapitalize="none"
             autoCorrect={false}
             style={styles.search}
@@ -174,19 +175,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   shuffle: {
-    backgroundColor: '#3c87f7',
+    backgroundColor: Palette.primary,
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 10,
   },
-  shuffleText: { color: '#fff', fontSize: 14, fontWeight: '600' },
+  shuffleText: { color: Palette.onPrimary, fontSize: 14, fontWeight: '600' },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#333',
+    borderBottomColor: Palette.border,
   },
   avatar: { width: 50, height: 50, borderRadius: 25 },
   name: { flex: 1, fontSize: 17 },

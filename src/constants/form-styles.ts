@@ -1,3 +1,4 @@
+import { Palette } from '@/constants/theme';
 import { StyleSheet } from "react-native";
 
 //estilos compartidos por las pantallas con formulario (login, registro, etc.)
@@ -18,13 +19,13 @@ export const formStyles = StyleSheet.create({
     fontSize: 16,
   },
   button: {
-    backgroundColor: "#3c87f7",
+    backgroundColor: Palette.primary,
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: "center",
   },
   buttonText: {
-    color: "#ffffff",
+    color: Palette.onPrimary,
     fontSize: 16,
     fontWeight: "600",
   },

@@ -1,3 +1,4 @@
+import { Palette } from '@/constants/theme';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { API_BASE_URL } from '@/constants/api';
@@ -33,8 +34,8 @@ function Row({
 }) {
   return (
     <Pressable style={styles.row} onPress={onPress}>
-      <ThemedText style={[styles.rowText, danger && { color: '#ff4d4d' }]}>{label}</ThemedText>
-      {chevron && <Ionicons name="chevron-forward" size={18} color="#888" />}
+      <ThemedText style={[styles.rowText, danger && { color: Palette.danger }]}>{label}</ThemedText>
+      {chevron && <Ionicons name="chevron-forward" size={18} color={Palette.muted} />}
     </Pressable>
   );
 }
@@ -128,7 +129,7 @@ export default function SettingsScreen() {
             <Ionicons
               name={pushMode === opt.value ? "radio-button-on" : "radio-button-off"}
               size={22}
-              color={pushMode === opt.value ? "#3c87f7" : "#888"}
+              color={pushMode === opt.value ? Palette.primary : Palette.muted}
             />
           </Pressable>
         ))}
@@ -154,7 +155,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#333',
+    borderBottomColor: Palette.border,
   },
   headerTitle: { fontSize: 18, fontWeight: '600' },
   content: { paddingHorizontal: 16, paddingBottom: 32 },
@@ -172,7 +173,7 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#333',
+    borderBottomColor: Palette.border,
   },
   rowText: { flex: 1, fontSize: 16 },
   sub: { fontSize: 12, opacity: 0.6, marginTop: 2 },

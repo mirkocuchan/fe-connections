@@ -1,3 +1,4 @@
+import { Palette } from '@/constants/theme';
 import { EmptyState } from '@/components/empty-state';
 import { ChatListSkeleton } from '@/components/skeleton';
 import { ThemedText } from '@/components/themed-text';
@@ -139,7 +140,7 @@ export default function ChatsScreen() {
           value={searchQuery}
           onChangeText={setSearchQuery}
           placeholder="Buscar..."
-          placeholderTextColor="#888"
+          placeholderTextColor={Palette.muted}
           autoCapitalize="none"
           autoCorrect={false}
           style={styles.search}
@@ -228,7 +229,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   badge: {
-    backgroundColor: '#3c87f7',
+    backgroundColor: Palette.primary,
     minWidth: 22,
     height: 22,
     borderRadius: 11,

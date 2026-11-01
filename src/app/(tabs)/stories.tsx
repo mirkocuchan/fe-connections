@@ -1,3 +1,4 @@
+import { Palette } from '@/constants/theme';
 import { EmptyState } from '@/components/empty-state';
 import { SkeletonBox } from '@/components/skeleton';
 import { ThemedText } from '@/components/themed-text';
@@ -399,14 +400,14 @@ export default function StoriesScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   publishButton: {
-    backgroundColor: '#3c87f7',
+    backgroundColor: Palette.primary,
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: 'center',
     marginHorizontal: 8,
     marginTop: 8,
   },
-  publishText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  publishText: { color: Palette.onPrimary, fontSize: 16, fontWeight: '600' },
   tile: {
     width: TILE_WIDTH,
     height: TILE_HEIGHT,

@@ -1,13 +1,15 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { Palette } from '@/constants/theme';
 import { apiFetch, apiFetchChecked } from '@/utils/api';
 import { setActiveChat } from '@/utils/push';
 import { onSocketEvent, sendSocketEvent } from '@/utils/socket';
 import { dayLabel, formatTime, sameDay } from '@/utils/time';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Image, KeyboardAvoidingView, Modal, Pressable, StyleSheet, TextInput } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Image, KeyboardAvoidingView, Modal, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const PAGE_SIZE = 30;
@@ -49,6 +51,22 @@ export default function ChatScreen() {
   const [otherTyping, setOtherTyping] = useState(false);
   const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastTypingSent = useRef(0);
+  const [showTip, setShowTip] = useState(false);
+
+  useEffect(() => {
+    async function checkTip() {
+      const id = await SecureStore.getItemAsync("my_user_id");
+      const seen = await SecureStore.getItemAsync("safety_tip_seen_" + id);
+      if (!seen) setShowTip(true);
+    }
+    checkTip();
+  }, []);
+
+  async function dismissTip() {
+    setShowTip(false);
+    const id = await SecureStore.getItemAsync("my_user_id");
+    if (id) await SecureStore.setItemAsync("safety_tip_seen_" + id, "1");
+  }
 
   // la lista invertida necesita el más nuevo primero, nuestro estado está en orden cronológico
   const invertedMessages = useMemo(() => [...messages].reverse(), [messages]);
@@ -229,6 +247,8 @@ export default function ChatScreen() {
         setOtherTyping(true);
         if (typingTimer.current) clearTimeout(typingTimer.current);
         typingTimer.current = setTimeout(() => setOtherTyping(false), 4000);
+      } else if (ev.type === "chat_read" && ev.chat_id === chatID) {
+        setMessages((prev) => prev.map((m) => (m.is_mine ? { ...m, read_by_other: true } : m)));
       }
     });
     return () => {
@@ -256,6 +276,19 @@ export default function ChatScreen() {
           </Pressable>
         </ThemedView>
 
+        {showTip && (
+          <View style={styles.tip}>
+            <Ionicons name="shield-checkmark-outline" size={20} color={Palette.primary} />
+            <ThemedText style={styles.tipText}>
+              Cuidate: no compartas datos personales ni dinero con alguien que recién conocés.
+              Si algo te incomoda, podés reportar o bloquear desde el menú ⋮.
+            </ThemedText>
+            <Pressable onPress={dismissTip} hitSlop={10}>
+              <Ionicons name="close" size={18} color="#ffffff" />
+            </Pressable>
+          </View>
+        )}
+
         {readOnly && (
           <ThemedText style={styles.banner}>
             {iBlocked
@@ -281,12 +314,14 @@ export default function ChatScreen() {
             return (
               <>
                 {showDay && (
-                  <ThemedText style={styles.daySeparator}>{dayLabel(item.created_at)}</ThemedText>
+                  <ThemedText style={styles.daySeparator}>
+                    {dayLabel(item.created_at)}
+                  </ThemedText>
                 )}
                 <ThemedView
                   style={{
                     alignSelf: item.is_mine ? 'flex-end' : 'flex-start',
-                    backgroundColor: item.is_mine ? '#2b5278' : '#333',
+                    backgroundColor: item.is_mine ? '#2b5278' : Palette.border,
                     paddingHorizontal: 12,
                     paddingVertical: 8,
                     borderRadius: 16,
@@ -312,7 +347,16 @@ export default function ChatScreen() {
                     </>
                   )}
                   <ThemedText>{item.content}</ThemedText>
-                  <ThemedText style={styles.time}>{formatTime(item.created_at)}</ThemedText>
+                  <View style={styles.meta}>
+                    <ThemedText style={styles.time}>{formatTime(item.created_at)}</ThemedText>
+                    {item.is_mine && (
+                      <Ionicons
+                        name={item.read_by_other ? "checkmark-done" : "checkmark"}
+                        size={14}
+                        color={item.read_by_other ? "#4fc3f7" : "rgba(255,255,255,0.6)"}
+                      />
+                    )}
+                  </View>
                 </ThemedView>
               </>
             );
@@ -331,7 +375,7 @@ export default function ChatScreen() {
               value={content}
               onChangeText={handleChangeText}
               placeholder="Escribí un mensaje..."
-              placeholderTextColor="#888"
+              placeholderTextColor={Palette.muted}
               multiline
               style={styles.messageInput}
             />
@@ -388,7 +432,7 @@ export default function ChatScreen() {
                     value={nicknameInput}
                     onChangeText={setNicknameInput}
                     placeholder="Ponerle un apodo..."
-                    placeholderTextColor="#888"
+                    placeholderTextColor={Palette.muted}
                     style={styles.sheetInput}
                     autoFocus
                   />
@@ -417,7 +461,7 @@ export default function ChatScreen() {
                     value={reportDetails}
                     onChangeText={setReportDetails}
                     placeholder={reportReason === "otro" ? "Detalles (obligatorio)" : "Detalles (opcional)"}
-                    placeholderTextColor="#888"
+                    placeholderTextColor={Palette.muted}
                     multiline
                     style={styles.sheetInput}
                   />
@@ -446,7 +490,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#333",
+    borderBottomColor: Palette.border,
   },
   headerTitle: {
     fontSize: 18,
@@ -464,9 +508,9 @@ const styles = StyleSheet.create({
     gap: 8,
     padding: 8,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "#333",
+    borderTopColor: Palette.border,
   },
-  typing: { fontSize: 12, color: "#3c87f7" },
+  typing: { fontSize: 12, color: Palette.primary },
   messageInput: {
     flex: 1,
     maxHeight: 120,
@@ -480,7 +524,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   sendButton: {
-    backgroundColor: "#3c87f7",
+    backgroundColor: Palette.primary,
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -523,17 +567,28 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   primaryButton: {
-    backgroundColor: "#3c87f7",
+    backgroundColor: Palette.primary,
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: "center",
     marginTop: 12,
   },
   daySeparator: { alignSelf: "center", fontSize: 12, opacity: 0.6, marginVertical: 10 },
-  time: { fontSize: 11, opacity: 0.55, alignSelf: "flex-end", marginTop: 2 },
   primaryButtonText: {
     color: "#ffffff",
     fontSize: 16,
     fontWeight: "600",
   },
+  meta: { flexDirection: "row", alignItems: "center", alignSelf: "flex-end", gap: 4, marginTop: 2 },
+  time: { fontSize: 11, opacity: 0.55 },
+  tip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    margin: 8,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: "rgba(60,135,247,0.15)",
+  },
+  tipText: { flex: 1, fontSize: 13, lineHeight: 18 },
 });

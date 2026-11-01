@@ -1,3 +1,4 @@
+import { Palette } from '@/constants/theme';
 import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -68,7 +69,7 @@ export default function ChangePasswordScreen() {
           value={currentPassword}
           onChangeText={setCurrentPassword}
           placeholder="Contraseña actual"
-          placeholderTextColor="#888"
+          placeholderTextColor={Palette.muted}
           secureTextEntry
           autoCapitalize="none"
           style={formStyles.input}
@@ -77,7 +78,7 @@ export default function ChangePasswordScreen() {
           value={newPassword}
           onChangeText={setNewPassword}
           placeholder="Nueva contraseña"
-          placeholderTextColor="#888"
+          placeholderTextColor={Palette.muted}
           secureTextEntry
           autoCapitalize="none"
           style={formStyles.input}
@@ -86,7 +87,7 @@ export default function ChangePasswordScreen() {
           value={repeatPassword}
           onChangeText={setRepeatPassword}
           placeholder="Repetir nueva contraseña"
-          placeholderTextColor="#888"
+          placeholderTextColor={Palette.muted}
           secureTextEntry
           autoCapitalize="none"
           style={formStyles.input}

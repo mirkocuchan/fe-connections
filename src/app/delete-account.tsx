@@ -1,3 +1,4 @@
+import { Palette } from '@/constants/theme';
 import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -67,7 +68,7 @@ export default function DeleteAccountScreen() {
           value={password}
           onChangeText={setPassword}
           placeholder="Tu contraseña"
-          placeholderTextColor="#888"
+          placeholderTextColor={Palette.muted}
           secureTextEntry
           autoCapitalize="none"
           style={formStyles.input}
@@ -90,7 +91,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, padding: 16, gap: 16 },
   warning: { opacity: 0.8 },
   deleteButton: {
-    backgroundColor: '#ff4d4d',
+    backgroundColor: Palette.danger,
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: 'center',

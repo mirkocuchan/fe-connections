@@ -49,5 +49,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 12,
   },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  buttonText: { color: Palette.onPrimary, fontSize: 16, fontWeight: '600' },
 });

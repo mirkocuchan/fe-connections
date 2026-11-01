@@ -1,3 +1,4 @@
+import { Palette } from '@/constants/theme';
 import { FadeInValue, PopIn } from '@/components/reveal-effects';
 import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
@@ -213,7 +214,7 @@ export default function CardScreen() {
                       </FadeInValue>
                     ) : (
                       <ThemedView style={styles.hidden}>
-                        <Ionicons name="lock-closed-outline" size={14} color="#888" />
+                        <Ionicons name="lock-closed-outline" size={14} color={Palette.muted} />
                         <ThemedText style={styles.hiddenText}>Sin revelar</ThemedText>
                       </ThemedView>
                     )}
@@ -226,7 +227,7 @@ export default function CardScreen() {
                 value={notesInput}
                 onChangeText={setNotesInput}
                 placeholder="Notas sobre esta persona..."
-                placeholderTextColor="#888"
+                placeholderTextColor={Palette.muted}
                 multiline
                 scrollEnabled={false}
                 style={[formStyles.input, styles.notes]}
@@ -249,7 +250,7 @@ export default function CardScreen() {
                     ) : revealedByMe(f) ? (
                     <PopIn animate={justRevealed.includes(f.key)}>
                       <ThemedView style={styles.done}>
-                        <Ionicons name="checkmark-circle" size={16} color="#34c759" />
+                        <Ionicons name="checkmark-circle" size={16} color={Palette.success} />
                         <ThemedText style={styles.doneText}>Revelado</ThemedText>
                       </ThemedView>
                     </PopIn>
@@ -304,45 +305,45 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#333',
+    borderBottomColor: Palette.border,
   },
   label: { fontSize: 16 },
   value: { flex: 1, textAlign: 'right', fontSize: 16, opacity: 0.9 },
   hidden: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  hiddenText: { color: '#888', fontSize: 14 },
+  hiddenText: { color: Palette.muted, fontSize: 14 },
   notes: { minHeight: 80, textAlignVertical: 'top', marginTop: 8 },
   secondary: {
     borderWidth: 1,
-    borderColor: '#3c87f7',
+    borderColor: Palette.primary,
     borderRadius: 8,
     paddingVertical: 10,
     alignItems: 'center',
     marginTop: 12,
   },
-  secondaryText: { color: '#3c87f7', fontSize: 16, fontWeight: '600' },
+  secondaryText: { color: Palette.primary, fontSize: 16, fontWeight: '600' },
   reveal: {
     borderWidth: 1,
-    borderColor: '#3c87f7',
+    borderColor: Palette.primary,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
-  revealText: { color: '#3c87f7', fontSize: 14, fontWeight: '600' },
+  revealText: { color: Palette.primary, fontSize: 14, fontWeight: '600' },
   danger: {
     borderWidth: 1,
-    borderColor: '#ff4d4d',
+    borderColor: Palette.danger,
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: 'center',
     marginTop: 12,
   },
-  dangerText: { color: '#ff4d4d', fontSize: 16, fontWeight: '600' },
+  dangerText: { color: Palette.danger, fontSize: 16, fontWeight: '600' },
   note: { fontSize: 13, opacity: 0.6, marginBottom: 4 },
   done: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  doneText: { color: '#34c759', fontSize: 14, fontWeight: '600' },
-  emptyLink: { color: '#888', fontSize: 14, textDecorationLine: 'underline' },
+  doneText: { color: Palette.success, fontSize: 14, fontWeight: '600' },
+  emptyLink: { color: Palette.muted, fontSize: 14, textDecorationLine: 'underline' },
   disabled: { opacity: 0.5 },
-  secondaryDone: { borderColor: '#34c759' },
-  secondaryTextDone: { color: '#34c759' },
+  secondaryDone: { borderColor: Palette.success },
+  secondaryTextDone: { color: Palette.success },
   center: { alignItems: 'center', gap: 12, marginTop: 40 },
 });

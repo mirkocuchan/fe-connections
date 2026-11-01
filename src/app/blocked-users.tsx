@@ -1,3 +1,4 @@
+import { Palette } from '@/constants/theme';
 import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -62,16 +63,16 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#333',
+    borderBottomColor: Palette.border,
   },
   name: { flex: 1, fontSize: 16 },
   unblock: {
     borderWidth: 1,
-    borderColor: '#3c87f7',
+    borderColor: Palette.primary,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
-  unblockText: { color: '#3c87f7', fontSize: 14, fontWeight: '600' },
+  unblockText: { color: Palette.primary, fontSize: 14, fontWeight: '600' },
   empty: { textAlign: 'center', marginTop: 32, opacity: 0.6 },
 });

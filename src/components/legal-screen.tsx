@@ -1,3 +1,4 @@
+import { Palette } from '@/constants/theme';
 import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -66,7 +67,7 @@ const styles = StyleSheet.create({
     gap: 2,
     paddingVertical: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#333',
+    borderBottomColor: Palette.border,
   },
   tableLabel: { fontSize: 15, lineHeight: 22, fontWeight: '600' },
   tableValue: { fontSize: 14, lineHeight: 21, opacity: 0.7 },

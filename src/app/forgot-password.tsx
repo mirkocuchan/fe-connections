@@ -1,3 +1,4 @@
+import { Palette } from '@/constants/theme';
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { API_BASE_URL } from "@/constants/api";
@@ -54,7 +55,7 @@ export default function ForgotPasswordScreen() {
           keyboardType="email-address"
           autoCapitalize="none"
           style={formStyles.input}
-          placeholderTextColor="#888"
+          placeholderTextColor={Palette.muted}
         />
         <Pressable
           onPress={handleSend}

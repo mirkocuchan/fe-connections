@@ -1,3 +1,4 @@
+import { Palette } from '@/constants/theme';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { apiFetchChecked } from '@/utils/api';
@@ -61,7 +62,7 @@ export default function NewChatScreen() {
             value={content}
             onChangeText={setContent}
             placeholder="Escribí un mensaje..."
-            placeholderTextColor="#888"
+            placeholderTextColor={Palette.muted}
             multiline
             autoFocus
             style={styles.input}
@@ -87,7 +88,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#333",
+    borderBottomColor: Palette.border,
   },
   headerTitle: { flex: 1, fontSize: 18, fontWeight: "600" },
   body: { flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: 24 },
@@ -98,12 +99,12 @@ const styles = StyleSheet.create({
     gap: 8,
     padding: 8,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "#333",
+    borderTopColor: Palette.border,
   },
   input: {
     flex: 1,
     maxHeight: 120,
-    color: "#ffffff",
+    color: Palette.onPrimary,
     borderWidth: 1,
     borderColor: "#555",
     borderRadius: 20,
@@ -112,7 +113,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   sendButton: {
-    backgroundColor: "#3c87f7",
+    backgroundColor: Palette.primary,
     width: 40,
     height: 40,
     borderRadius: 20,

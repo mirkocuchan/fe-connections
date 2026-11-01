@@ -1,3 +1,4 @@
+import { Palette } from '@/constants/theme';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { formStyles } from '@/constants/form-styles';
@@ -70,7 +71,7 @@ export default function WelcomeScreen() {
           renderItem={({ item }) => (
             <View style={[styles.page, { width }]}>
               <View style={styles.iconCircle}>
-                <Ionicons name={item.icon} size={64} color="#3c87f7" />
+                <Ionicons name={item.icon} size={64} color={Palette.primary} />
               </View>
               <ThemedText style={styles.title}>{item.title}</ThemedText>
               <ThemedText style={styles.text}>{item.text}</ThemedText>
@@ -112,6 +113,6 @@ const styles = StyleSheet.create({
   text: { fontSize: 16, textAlign: 'center', opacity: 0.75, lineHeight: 24 },
   dots: { flexDirection: 'row', justifyContent: 'center', gap: 8, paddingVertical: 16 },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#444' },
-  dotActive: { backgroundColor: '#3c87f7', width: 22 },
+  dotActive: { backgroundColor: Palette.primary, width: 22 },
   bottom: { paddingHorizontal: 24, paddingBottom: 16 },
 });

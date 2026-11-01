@@ -15,12 +15,12 @@ export const Colors = {
     backgroundSelected: '#E0E1E6',
     textSecondary: '#60646C',
   },
-  dark: {
-    text: '#ffffff',
-    background: '#000000',
-    backgroundElement: '#212225',
-    backgroundSelected: '#2E3135',
-    textSecondary: '#B0B4BA',
+    dark: {
+    text: '#eceaf2',
+    background: '#14161f',
+    backgroundElement: '#1d2030',
+    backgroundSelected: '#252940',
+    textSecondary: '#a3a8bf',
   },
 } as const;
 
@@ -65,10 +65,20 @@ export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
 export const MaxContentWidth = 800;
 
 export const Palette = {
-  primary: '#3c87f7',
-  danger: '#ff4d4d',
-  success: '#34c759',
-  muted: '#888888',
-  border: '#333333',
-  skeleton: '#262626',
+  background: '#14161f',
+  surface: '#1d2030',
+  surfaceAlt: '#252940',
+  outline: '#2a2e42',
+  text: '#eceaf2',
+  muted: '#8b90a8',
+  primary: '#e9b872',
+  primarySoft: 'rgba(233,184,114,0.14)',
+  onPrimary: '#2a1d08',
+  bubbleMine: '#e9b872',
+  bubbleOther: '#252940',
+  storyRing: '#9b8cf0',
+  danger: '#ef6b6b',
+  success: '#5fcf9a',
+  border: '#2a2e42',
+  skeleton: '#252940',
 } as const;

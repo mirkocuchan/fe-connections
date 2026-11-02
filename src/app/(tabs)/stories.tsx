@@ -1,22 +1,23 @@
-import { Palette } from '@/constants/theme';
 import { EmptyState } from '@/components/empty-state';
 import { SkeletonBox } from '@/components/skeleton';
+import { StoryViewer } from '@/components/story-viewer';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { API_BASE_URL } from '@/constants/api';
+import { Palette } from '@/constants/theme';
 import { apiFetch, apiFetchChecked } from '@/utils/api';
 import { chooseImageSource } from '@/utils/imagePicker';
 import * as FileSystem from 'expo-file-system/legacy';
+import { Image } from 'expo-image';
 import { useFocusEffect } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Button, Dimensions, FlatList, Image, Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Alert, Dimensions, FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
 
 function groupStoriesByUser(stories: any[]) {
   const grouped: { [userID: string]: any[] } = {};
-  
+
   for (const story of stories) {
     if (!grouped[story.user_id]) {
       grouped[story.user_id] = [];
@@ -24,7 +25,7 @@ function groupStoriesByUser(stories: any[]) {
     grouped[story.user_id].push(story);
   }
   const groups = Object.values(grouped);
-  
+
   for (const group of groups) {
     group.reverse();
   }
@@ -38,14 +39,6 @@ function groupStoriesByUser(stories: any[]) {
   return groups;
 }
 
-function timeAgo(dateString: string) {
-  const diffMs = Date.now() - new Date(dateString).getTime();
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-  if (diffHours < 1) return "hace unos minutos";
-  if (diffHours === 1) return "hace 1 hora";
-  return `hace ${diffHours} horas`;
-}
-
 //para ver las historias de manera distinta, rectangular
 const COLUMNS = 3;
 const GAP = 8;
@@ -55,16 +48,7 @@ const TILE_HEIGHT = TILE_WIDTH * 1.4; // vertical, como una historia
 export default function StoriesScreen() {
   const [stories, setStories] = useState<any[]>([]);
   const [openGroup, setOpenGroup] = useState<any[] | null>(null);
-  const [currentIndex, setCurrentIndex] = useState(0);
   const [myUserID, setMyUserID] = useState("");
-  const [viewers, setViewers] = useState<any[]>([]);
-  const [showViewers, setShowViewers] = useState(false);
-  const [imageLoading, setImageLoading] = useState(true);
-  const [replyText, setReplyText] = useState("");
-  const [replyFocused, setReplyFocused] = useState(false);
-  const [sendingReply, setSendingReply] = useState(false);
-  const [replySent, setReplySent] = useState(false);
-  const replying = replyFocused || replyText.length > 0;
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -84,7 +68,7 @@ export default function StoriesScreen() {
     await fetchStories();
     setRefreshing(false);
   }
-  
+
   useFocusEffect(
     useCallback(() => {
       fetchStories();
@@ -98,23 +82,41 @@ export default function StoriesScreen() {
     loadMyID();
   }, []);
 
+  //lo que el visor necesita de la pantalla
   async function markAsViewed(story: any) {
     await apiFetch("/stories/" + story.story_id + "/view", { method: "POST" });
   }
-  
-  async function handleDeleteStory() {
-    if (!openGroup) return;
-    const story = openGroup[currentIndex];
+
+  async function handleDeleteStory(story: any) {
     const { ok, data } = await apiFetchChecked("/stories/" + story.story_id, { method: "DELETE" });
-    if (!ok) {
-      Alert.alert("No se pudo borrar", data?.error || "Intentá de nuevo");
-      setOpenGroup(null);
-      return;
-    }
+    if (!ok) Alert.alert("No se pudo borrar", data?.error || "Intentá de nuevo");
     setOpenGroup(null);
     fetchStories();
   }
-  
+
+  async function handleLoadViewers(story: any) {
+    const data = await apiFetch("/stories/" + story.story_id + "/viewers");
+    return Array.isArray(data) ? data : [];
+  }
+
+  async function handleReply(story: any, content: string) {
+    const { ok, data } = await apiFetchChecked("/stories/" + story.story_id + "/reply", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content }),
+    });
+    if (!ok) {
+      Alert.alert("No se pudo enviar", data?.error || "Intentá de nuevo");
+      return false;
+    }
+    return true;
+  }
+
+  function handleCloseViewer() {
+    setOpenGroup(null);
+    fetchStories(); //para actualizar los aros de "vista"
+  }
+
   async function uploadAndCreateStory(imageUri: string) {
     const token = await SecureStore.getItemAsync("token");
 
@@ -148,88 +150,7 @@ export default function StoriesScreen() {
     fetchStories();
   }
 
-  async function handleShowViewers() {
-    if (!openGroup) return;
-    const story = openGroup[currentIndex];
-    const data = await apiFetch("/stories/" + story.story_id + "/viewers");
-    setViewers(Array.isArray(data) ? data : []);
-    setShowViewers(true);
-  }
-  useEffect(() => {
-    if (!openGroup || showViewers || replying) return;
-
-    const timer = setTimeout(() => {
-      handleNextStory();
-    }, 5000);
-
-    return () => clearTimeout(timer);
-  }, [openGroup, currentIndex, showViewers, replying]);
-
   const groupedStories = groupStoriesByUser(stories);
-  function handleStoryOptions() {
-    Alert.alert(
-      "Opciones",
-      "¿Qué querés hacer con esta historia?",
-      [
-        { text: "Ver quién la vio", onPress: handleShowViewers },
-        { text: "Borrar", onPress: confirmDeleteStory, style: "destructive" },
-        { text: "Cancelar", style: "cancel" },
-      ]
-    );
-  }
-  async function handleSendReply() {
-    if (!openGroup || sendingReply) return;
-    const content = replyText.trim();
-    if (!content) return;
-    const story = openGroup[currentIndex];
-
-    setSendingReply(true);
-    const { ok, data } = await apiFetchChecked("/stories/" + story.story_id + "/reply", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content }),
-    });
-    setSendingReply(false);
-
-    if (!ok) {
-      Alert.alert("No se pudo enviar", data?.error || "Intentá de nuevo");
-      return;
-    }
-    setReplyText("");
-    Keyboard.dismiss();
-    setReplySent(true);
-    setTimeout(() => setReplySent(false), 2000);
-  }
-  
-  function confirmDeleteStory() {
-    Alert.alert(
-      "Confirmar",
-      "¿Realmente deseás borrar esta historia?",
-      [
-        { text: "Sí, borrar", onPress: handleDeleteStory, style: "destructive" },
-        { text: "No", style: "cancel" },
-      ]
-    );
-  }
-  function handleOpenGroup(group: any[]) {
-    setOpenGroup(group);
-    setCurrentIndex(0);
-    setReplyText("");
-    markAsViewed(group[0]);
-  }
-
-  function handleNextStory() {
-    if (!openGroup) return;
-    if (currentIndex + 1 < openGroup.length) {
-      const nextIndex = currentIndex + 1;
-      setCurrentIndex(nextIndex);
-      setReplyText("");
-      markAsViewed(openGroup[nextIndex]);
-    } else {
-      setOpenGroup(null);
-      fetchStories();
-    }
-  }
 
   return (
     <SafeAreaView style={{ flex: 1 }} edges={['left', 'right']}>
@@ -254,7 +175,7 @@ export default function StoriesScreen() {
             const hasUnviewed = group.some((s: any) => !s.viewed_at);
             return (
               <Pressable
-                onPress={() => handleOpenGroup(group)}
+                onPress={() => setOpenGroup(group)}
                 style={[
                   styles.tile,
                   {
@@ -263,7 +184,12 @@ export default function StoriesScreen() {
                   },
                 ]}
               >
-                <Image source={{ uri: cover.media_url }} style={StyleSheet.absoluteFill} />
+                <Image
+                  source={cover.media_url}
+                  style={StyleSheet.absoluteFill}
+                  contentFit="cover"
+                  cachePolicy="memory-disk"
+                />
                 {group.length > 1 && (
                   <ThemedText style={styles.count}>{group.length}</ThemedText>
                 )}
@@ -290,108 +216,18 @@ export default function StoriesScreen() {
           }
         />
 
-        <Modal visible={!!openGroup} transparent={true} onRequestClose={() => setOpenGroup(null)}>
-          <Pressable
-            style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', justifyContent: 'center', alignItems: 'center' }}
-            onPress={() => {if (showViewers) setShowViewers(false); else if (replyFocused) Keyboard.dismiss(); else handleNextStory();}}
-          >
-            {openGroup && (
-              <>
-                <ThemedView
-                  style={{
-                    position: 'absolute',
-                    top: 50,
-                    left: 20,
-                    zIndex: 10,
-                    backgroundColor: 'transparent',
-                  }}
-                >
-                  <ThemedText style={{ color: 'white', fontWeight: 'bold' }}>
-                    {openGroup[currentIndex].username}
-                  </ThemedText>
-                  <ThemedText style={{ color: '#ccc', fontSize: 12 }}>
-                    {timeAgo(openGroup[currentIndex].created_at)}
-                  </ThemedText>
-                </ThemedView>
-                <Image
-                  source={{ uri: openGroup[currentIndex].media_url }}
-                  style={{ width: '90%', height: '70%' }}
-                  resizeMode="contain"
-                  onLoadStart={() => setImageLoading(true)}
-                  onLoadEnd={() => setImageLoading(false)}
-                />
-                {imageLoading && (
-                  <ActivityIndicator size="large" color="#fff" style={{ position: 'absolute' }} />
-                )}
-                {openGroup[currentIndex].user_id === myUserID && (
-                  <Pressable
-                    onPress={handleStoryOptions}
-                    style={{ position: 'absolute', top: 50, right: 20, padding: 10 }}
-                  >
-                    <ThemedText style={{ fontSize: 24, color: 'white' }}>⋮</ThemedText>
-                  </Pressable>
-                )}
-                  {openGroup[currentIndex].user_id !== myUserID && (
-                    <KeyboardAvoidingView
-                      behavior={Platform.OS === "ios" ? "padding" : undefined}
-                      style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }}
-                    >
-                      <Pressable
-                        onPress={() => {}}
-                        style={{ flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, paddingBottom: 28 }}
-                      >
-                        <TextInput
-                          value={replyText}
-                          onChangeText={setReplyText}
-                          onFocus={() => setReplyFocused(true)}
-                          onBlur={() => setReplyFocused(false)}
-                          placeholder="Responder..."
-                          placeholderTextColor="#aaa"
-                          returnKeyType="send"
-                          onSubmitEditing={handleSendReply}
-                          style={{
-                            flex: 1, color: '#fff', borderWidth: 1, borderColor: '#777',
-                            borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8,
-                          }}
-                        />
-                        {replySent ? (
-                          <ThemedText style={{ color: 'white' }}>Enviado ✓</ThemedText>
-                        ) : (
-                          <Button
-                            title="Enviar"
-                            onPress={handleSendReply}
-                            disabled={sendingReply || !replyText.trim()}
-                          />
-                        )}
-                      </Pressable>
-                    </KeyboardAvoidingView>
-                  )}
-                {showViewers && (
-                  <Pressable
-                    onPress={() => {}}
-                    style={{
-                      position: 'absolute', left: 0, right: 0, bottom: 0,
-                      maxHeight: '50%', backgroundColor: Palette.surface,
-                      borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 16,
-                    }}
-                  >
-                  <ThemedText type="subtitle">Vistas ({viewers.length})</ThemedText>
-                  <FlatList
-                    data={viewers}
-                    keyExtractor={(item, index) => item.viewer_id ?? "anon-" + index}
-                    renderItem={({ item }) => (
-                      <ThemedText style={{ paddingVertical: 6 }}>
-                        {item.username} · {new Date(item.viewed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </ThemedText>
-                    )}
-                    ListEmptyComponent={<ThemedText>Todavía nadie la vio.</ThemedText>}
-                  />
-                </Pressable>
-                )}
-              </>  
-            )}
-          </Pressable>
-        </Modal>
+        {openGroup && (
+          <StoryViewer
+            key={openGroup[0].user_id}
+            group={openGroup}
+            myUserID={myUserID}
+            onClose={handleCloseViewer}
+            onView={markAsViewed}
+            onDelete={handleDeleteStory}
+            onLoadViewers={handleLoadViewers}
+            onReply={handleReply}
+          />
+        )}
       </ThemedView>
     </SafeAreaView>
   );

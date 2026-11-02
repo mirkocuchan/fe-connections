@@ -1,8 +1,9 @@
-import { Palette } from '@/constants/theme';
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { API_BASE_URL } from "@/constants/api";
 import { formStyles } from "@/constants/form-styles";
+import { LEGAL } from '@/constants/legal';
+import { Palette } from '@/constants/theme';
 import { registerForPush } from "@/utils/push";
 import { connectSocket } from "@/utils/socket";
 import { getLocales } from "expo-localization";
@@ -27,7 +28,10 @@ export default function LoginScreen() {
         body: JSON.stringify({ email, password, region_code: regionCode }),
       });
       const data = await response.json();
-
+      if (response.status === 403) {
+        setErrorMessage(`Tu cuenta fue suspendida. Si creés que es un error, escribinos a ${LEGAL.email}.`);
+        return;
+      }
       if (!data.token) {
         setErrorMessage(data.error || "Error al iniciar sesión");
         return;

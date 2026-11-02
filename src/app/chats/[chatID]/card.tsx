@@ -1,14 +1,16 @@
-import { Palette } from '@/constants/theme';
 import { FadeInValue, PopIn } from '@/components/reveal-effects';
+import { RevealPhoto } from '@/components/reveal-photo';
 import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { formStyles } from '@/constants/form-styles';
+import { Palette } from '@/constants/theme';
 import { apiFetch, apiFetchChecked } from '@/utils/api';
 import { haptic } from '@/utils/haptics';
+import { onSocketEvent } from '@/utils/socket';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -41,6 +43,8 @@ export default function CardScreen() {
   const [justRevealed, setJustRevealed] = useState<string[]>([]); //lo que acabo de mostrar yo
   const [fresh, setFresh] = useState<string[]>([]); //lo que acaba de mostrarme la otra persona
   const prevRevealed = useRef<Record<string, boolean> | null>(null);
+  const [myPhotoCount, setMyPhotoCount] = useState(0);
+  const isInitiator = !!card?.is_initiator;
 
   async function fetchCard() {
     const data = await apiFetch("/chats/" + chatID + "/card");
@@ -48,9 +52,11 @@ export default function CardScreen() {
 
     const now: Record<string, boolean> = {};
     FIELDS.forEach((f) => (now[f.key] = isRevealed(data[f.valueKey])));
+    now.photos = (data.photos_value?.length ?? 0) > 0;
     const before = prevRevealed.current;
     if (before) {
       const newly = FIELDS.filter((f) => now[f.key] && !before[f.key]).map((f) => f.key);
+      if (now.photos && !before.photos) newly.push("photos");
       if (newly.length > 0) {
         setFresh(newly);
         haptic.success();
@@ -69,6 +75,8 @@ export default function CardScreen() {
     const data = await apiFetch("/me");
     if (!data) return false;
     setMe(data);
+    const mine = await apiFetch("/me/photos");
+    setMyPhotoCount(Array.isArray(mine) ? mine.length : 0);
     return true;
   }
 
@@ -123,7 +131,8 @@ export default function CardScreen() {
   }
 
   async function handleRevealAll() {
-    const pending = FIELDS.filter((f) => hasValue(f) && !revealedByMe(f)).map((f) => f.key);
+    const pending = FIELDS.filter((f) => (isInitiator || f.key !== "bio") && hasValue(f) && !revealedByMe(f)).map((f) => f.key);
+    if (isInitiator && myPhotoCount > 0 && !card?.my_reveals?.photos) pending.push("photos");
     const { ok, data } = await apiFetchChecked("/chats/" + chatID + "/card/reveal-all", {
       method: "POST",
     });
@@ -176,9 +185,20 @@ export default function CardScreen() {
       load();
     }, [chatID])
   );
+    //si la otra persona revela algo mientras miro la ficha, recargarla
+  useEffect(() => {
+    const unsubscribe = onSocketEvent((ev) => {
+      if (ev.type === "resync" || (ev.type === "card_updated" && ev.chat_id === chatID)) {
+        fetchCard();
+      }
+    });
+    return unsubscribe;
+  }, [chatID]);
 
   const nickname = card?.nickname?.Valid ? card.nickname.String : "Sin apodo";
-  const allDone = FIELDS.every((f) => !hasValue(f) || revealedByMe(f));
+  const revealable = FIELDS.filter((f) => isInitiator || f.key !== "bio");
+  const photosDone = !isInitiator || myPhotoCount === 0 || !!card?.my_reveals?.photos;
+  const allDone = revealable.every((f) => !hasValue(f) || revealedByMe(f)) && photosDone;
   
   return (
     <SafeAreaView style={{ flex: 1 }}>
@@ -202,6 +222,25 @@ export default function CardScreen() {
           {card && me && (
             <>
               <ThemedText style={styles.section}>Lo que sabés de esta persona</ThemedText>
+                <ThemedView style={styles.photosBlock}>
+                  <ThemedText style={styles.label}>Fotos</ThemedText>
+                  {(card.photos_value?.length ?? 0) > 0 ? (
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={{ gap: 8, paddingVertical: 10 }}
+                    >
+                      {card.photos_value.map((uri: string) => (
+                        <RevealPhoto key={uri} uri={uri} size={110} animate={fresh.includes("photos")} />
+                      ))}
+                    </ScrollView>
+                  ) : (
+                    <ThemedView style={[styles.hidden, { marginTop: 6 }]}>
+                      <Ionicons name="lock-closed-outline" size={14} color={Palette.muted} />
+                      <ThemedText style={styles.hiddenText}>Sin revelar</ThemedText>
+                    </ThemedView>
+                  )}
+                </ThemedView>
               {FIELDS.map((f) => {
                 const value = card[f.valueKey];
                 const revealed = isRevealed(value);
@@ -240,7 +279,12 @@ export default function CardScreen() {
 
               <ThemedText style={styles.section}>Lo que mostrás de vos</ThemedText>
               <ThemedText style={styles.note}>Lo que reveles no se puede volver a ocultar.</ThemedText>
-              {FIELDS.map((f) => (
+              {!isInitiator && (
+                <ThemedText style={styles.note}>
+                  Tus fotos y tu bio ya son públicas: quien te escribió las puede ver desde tu perfil.
+                </ThemedText>
+              )}
+              {revealable.map((f) => (
                 <ThemedView key={f.key} style={styles.row}>
                   <ThemedText style={styles.label}>{f.label}</ThemedText>
                   {!hasValue(f) ? (
@@ -267,7 +311,33 @@ export default function CardScreen() {
                   )}
                 </ThemedView>
               ))}
-
+              {isInitiator && (
+                <ThemedView style={styles.row}>
+                  <ThemedText style={styles.label}>Fotos</ThemedText>
+                  {myPhotoCount === 0 ? (
+                    <Pressable onPress={() => router.push("/edit-profile")}>
+                      <ThemedText style={styles.emptyLink}>Completar en tu perfil</ThemedText>
+                    </Pressable>
+                  ) : card.my_reveals?.photos ? (
+                    <PopIn animate={justRevealed.includes("photos")}>
+                      <ThemedView style={styles.done}>
+                        <Ionicons name="checkmark-circle" size={16} color={Palette.success} />
+                        <ThemedText style={styles.doneText}>Revelado</ThemedText>
+                      </ThemedView>
+                    </PopIn>
+                  ) : (
+                    <Pressable
+                      style={styles.reveal}
+                      onPress={() => {
+                        haptic.tap();
+                        handleReveal("photos");
+                      }}
+                    >
+                      <ThemedText style={styles.revealText}>Revelar</ThemedText>
+                    </Pressable>
+                  )}
+                </ThemedView>
+              )}
               <Pressable
                 style={[formStyles.button, { marginTop: 16 }, allDone && styles.disabled]}
                 disabled={allDone}
@@ -346,4 +416,9 @@ const styles = StyleSheet.create({
   secondaryDone: { borderColor: Palette.success },
   secondaryTextDone: { color: Palette.success },
   center: { alignItems: 'center', gap: 12, marginTop: 40 },
+  photosBlock: {
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: Palette.border,
+  },
 });

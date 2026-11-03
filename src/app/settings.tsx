@@ -1,7 +1,7 @@
-import { Palette } from '@/constants/theme';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { API_BASE_URL } from '@/constants/api';
+import { Palette } from '@/constants/theme';
 import { apiFetch, apiFetchChecked } from '@/utils/api';
 import { unregisterPush } from '@/utils/push';
 import { disconnectSocket } from '@/utils/socket';
@@ -43,16 +43,19 @@ function Row({
 export default function SettingsScreen() {
   const [globalDiscovery, setGlobalDiscovery] = useState(false);
   const [pushMode, setPushMode] = useState<PushMode>("name");
+  const [readReceipts, setReadReceipts] = useState(true);
 
   useFocusEffect(
     useCallback(() => {
       async function loadSettings() {
-        const [me, push] = await Promise.all([
+          const [me, push, receipts] = await Promise.all([
           apiFetch("/me"),
           apiFetch("/me/push-mode"),
+          apiFetch("/me/read-receipts"),
         ]);
         if (me) setGlobalDiscovery(me.global_discovery);
         if (push?.mode) setPushMode(push.mode);
+        if (receipts) setReadReceipts(receipts.enabled);
       }
       loadSettings();
     }, [])
@@ -67,6 +70,18 @@ export default function SettingsScreen() {
     });
     if (!ok) {
       setGlobalDiscovery(!value); // si falló, vuelve atrás
+      Alert.alert("Error", "No se pudo guardar el cambio");
+    }
+  }
+  async function handleToggleReceipts(value: boolean) {
+    setReadReceipts(value); // se actualiza al instante
+    const { ok } = await apiFetchChecked("/me/read-receipts", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ enabled: value }),
+    });
+    if (!ok) {
+      setReadReceipts(!value); // si falló, vuelve atrás
       Alert.alert("Error", "No se pudo guardar el cambio");
     }
   }
@@ -119,7 +134,7 @@ export default function SettingsScreen() {
             <ThemedText style={styles.rowText}>Recomendaciones globales</ThemedText>
             <ThemedText style={styles.sub}>Ver gente de cualquier país en Descubrir</ThemedText>
           </View>
-          <Switch value={globalDiscovery} onValueChange={handleToggleGlobal} />
+          <Switch value={globalDiscovery} onValueChange={handleToggleGlobal} trackColor={{ false: Palette.outline, true: Palette.primary }}/>
         </View>
 
         <ThemedText style={styles.section}>Notificaciones</ThemedText>
@@ -133,6 +148,20 @@ export default function SettingsScreen() {
             />
           </Pressable>
         ))}
+        <ThemedText style={styles.section}>Privacidad</ThemedText>
+          <View style={styles.row}>
+            <View style={{ flex: 1 }}>
+              <ThemedText style={styles.rowText}>Confirmaciones de lectura</ThemedText>
+              <ThemedText style={styles.sub}>
+                Si las desactivás, no verás cuándo leen tus mensajes ni los demás verán cuándo leíste los suyos
+              </ThemedText>
+            </View>
+            <Switch
+              value={readReceipts}
+              onValueChange={handleToggleReceipts}
+              trackColor={{ false: Palette.outline, true: Palette.primary }}
+            />
+          </View>
         <ThemedText style={styles.section}>Legal</ThemedText>
         <Row label="Términos y condiciones" onPress={() => router.push("/terms")} />
         <Row label="Reglas de la comunidad" onPress={() => router.push("/community-rules")} />

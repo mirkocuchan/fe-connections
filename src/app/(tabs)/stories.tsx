@@ -15,7 +15,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Alert, Dimensions, FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-function groupStoriesByUser(stories: any[]) {
+function groupStoriesByUser(stories: any[], myUserID: string) {
   const grouped: { [userID: string]: any[] } = {};
 
   for (const story of stories) {
@@ -31,6 +31,11 @@ function groupStoriesByUser(stories: any[]) {
   }
 
   groups.sort((a, b) => {
+    //la propia siempre primera
+    const aMine = a[0].user_id === myUserID;
+    const bMine = b[0].user_id === myUserID;
+    if (aMine !== bMine) return aMine ? -1 : 1;
+    //después, las que tienen historias sin ver
     const aHasUnviewed = a.some((s: any) => !s.viewed_at);
     const bHasUnviewed = b.some((s: any) => !s.viewed_at);
     if (aHasUnviewed === bHasUnviewed) return 0;
@@ -47,7 +52,7 @@ const TILE_HEIGHT = TILE_WIDTH * 1.4; // vertical, como una historia
 
 export default function StoriesScreen() {
   const [stories, setStories] = useState<any[]>([]);
-  const [openGroup, setOpenGroup] = useState<any[] | null>(null);
+  const [openUserID, setOpenUserID] = useState<string | null>(null);
   const [myUserID, setMyUserID] = useState("");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -90,7 +95,7 @@ export default function StoriesScreen() {
   async function handleDeleteStory(story: any) {
     const { ok, data } = await apiFetchChecked("/stories/" + story.story_id, { method: "DELETE" });
     if (!ok) Alert.alert("No se pudo borrar", data?.error || "Intentá de nuevo");
-    setOpenGroup(null);
+    setOpenUserID(null);
     fetchStories();
   }
 
@@ -113,7 +118,7 @@ export default function StoriesScreen() {
   }
 
   function handleCloseViewer() {
-    setOpenGroup(null);
+    setOpenUserID(null);
     fetchStories(); //para actualizar los aros de "vista"
   }
 
@@ -150,7 +155,21 @@ export default function StoriesScreen() {
     fetchStories();
   }
 
-  const groupedStories = groupStoriesByUser(stories);
+  const groupedStories = groupStoriesByUser(stories, myUserID);
+  const openIdx = openUserID ? groupedStories.findIndex((g) => g[0].user_id === openUserID) : -1;
+  const openGroup = openIdx >= 0 ? groupedStories[openIdx] : null;
+
+  //al terminar las historias de una persona, pasar a la siguiente
+  function handleNextGroup() {
+    if (openIdx >= 0 && openIdx + 1 < groupedStories.length) {
+      setOpenUserID(groupedStories[openIdx + 1][0].user_id);
+    } else {
+      handleCloseViewer();
+    }
+  }
+  function handlePrevGroup() {
+    if (openIdx > 0) setOpenUserID(groupedStories[openIdx - 1][0].user_id);
+  }
 
   return (
     <SafeAreaView style={{ flex: 1 }} edges={['left', 'right']}>
@@ -175,7 +194,7 @@ export default function StoriesScreen() {
             const hasUnviewed = group.some((s: any) => !s.viewed_at);
             return (
               <Pressable
-                onPress={() => setOpenGroup(group)}
+                onPress={() => setOpenUserID(group[0].user_id)}
                 style={[
                   styles.tile,
                   {
@@ -218,10 +237,11 @@ export default function StoriesScreen() {
 
         {openGroup && (
           <StoryViewer
-            key={openGroup[0].user_id}
             group={openGroup}
             myUserID={myUserID}
             onClose={handleCloseViewer}
+            onNextGroup={handleNextGroup}
+            onPrevGroup={handlePrevGroup}
             onView={markAsViewed}
             onDelete={handleDeleteStory}
             onLoadViewers={handleLoadViewers}

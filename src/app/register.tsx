@@ -1,8 +1,8 @@
-import { Palette } from '@/constants/theme';
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { API_BASE_URL } from "@/constants/api";
 import { formStyles } from "@/constants/form-styles";
+import { Palette } from '@/constants/theme';
 import DateTimePicker, { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
 import { Link, router } from 'expo-router';
 import { useState } from "react";
@@ -20,6 +20,12 @@ export default function RegisterScreen() {
   const [accepted, setAccepted] = useState(false);
 
   function handleRegister() {
+    setErrorMessage("");
+    const cleanEmail = email.trim().toLowerCase();
+    if (!isValidEmail(cleanEmail)) {
+      setErrorMessage("Ingresá un mail válido");
+      return;
+    }
     if (!dob) {
       setErrorMessage("Elegí tu fecha de nacimiento");
       return;
@@ -35,7 +41,7 @@ export default function RegisterScreen() {
     fetch(API_BASE_URL + "/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, email, password, date_of_birth: toYMD(dob), accept_terms: accepted }),
+      body: JSON.stringify({ username, email: cleanEmail, password, date_of_birth: toYMD(dob), accept_terms: accepted }),
     })
       .then((response) => response.json()) //respuesta del servidor, la convierte en un objeto JSON 
       .then((data) => {
@@ -81,6 +87,8 @@ export default function RegisterScreen() {
           autoCapitalize="none"
           style={formStyles.input}
           placeholderTextColor={Palette.muted}
+          autoCorrect={false}
+          autoComplete="email"
         />
         <TextInput
           value={password}
@@ -175,6 +183,11 @@ function isAdult(d: Date) {
   if (!hadBirthday) age--;
   return age >= 18;
 }
+
+//formato básico de mail: algo@dominio.ext (el servidor además comprueba que el dominio exista)
+function isValidEmail(e: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e);
+}
 const styles = StyleSheet.create({
   termsRow: {
     flexDirection: "row",
@@ -185,3 +198,4 @@ const styles = StyleSheet.create({
     fontSize: 24,
   },
 });
+

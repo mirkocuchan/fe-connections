@@ -1,3 +1,4 @@
+import { Palette } from "@/constants/theme";
 import { useUnreadTotal } from "@/utils/unread";
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
@@ -6,7 +7,25 @@ export default function TabLayout() {
   const unread = useUnreadTotal();
   
   return (
-    <Tabs backBehavior="initialRoute">
+    <Tabs
+      backBehavior="initialRoute"
+      screenOptions={{
+        tabBarActiveTintColor: Palette.primary,
+        tabBarInactiveTintColor: Palette.muted,
+        tabBarStyle: {
+          backgroundColor: Palette.surface,
+          borderTopColor: Palette.outline,
+        },
+        tabBarBadgeStyle: {
+          backgroundColor: Palette.primary,
+          color: Palette.onPrimary,
+        },
+        headerStyle: { backgroundColor: Palette.background },
+        headerTintColor: Palette.text,
+        headerTitleStyle: { color: Palette.text },
+        headerShadowVisible: false,
+      }}
+    >
       <Tabs.Screen
         name="stories"
         options={{

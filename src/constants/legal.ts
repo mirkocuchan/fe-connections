@@ -7,7 +7,7 @@ export const LEGAL = {
   hostingCountry: "Brasil",
   emailProvider: "Resend",
   courtCity: "Ciudad de Buenos Aires",
-  effectiveDate: "[FECHA DE SALIDA]",
+  effectiveDate: "8 de noviembre de 2026",
   privacyUrl: "https://antifaz.app/privacidad",
   backupDays: 30,
   reportMonths: 12,
